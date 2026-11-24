@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import CertificateForm from "@/components/certificates/certificate-form";
 import { useLocale } from "@/components/locale-provider";
 import { t } from "@/lib/locale";
-import LocaleToggle from "@/components/locale-toggle";
+import PortalFrame from "@/components/layout/portal-frame";
 
 export default function EditCertificatePage() {
   const { id } = useParams<{ id: string }>();
@@ -22,5 +22,5 @@ export default function EditCertificatePage() {
       setData(value);
     }).catch((cause: unknown) => setError(cause instanceof Error ? cause.message : t(locale,"حدث خطأ.", "Something went wrong.")));
   }, [id, locale]);
-  return <main className="form-page" dir={locale==="ar"?"rtl":"ltr"}><div className="form-top"><Link href="/certificates">← {txt("الشهادات","Certificates")}</Link><span>رِفد</span><LocaleToggle/></div><div className="form-heading"><h1>{txt("تعديل الشهادة","Edit certificate")}</h1><p>{txt("التغييرات تحفظ كسجل إصدار جديد.","Changes are saved as a new version.")}</p></div>{data?<CertificateForm initial={data} certificateId={id}/>:error?<div className="form-error" role="alert">{error}</div>:<p>{txt("جارٍ تحميل الشهادة…","Loading certificate…")}</p>}</main>;
+  return <PortalFrame signedIn><main className="form-page" dir={locale==="ar"?"rtl":"ltr"}><div className="form-top"><Link href="/certificates">← {txt("الشهادات","Certificates")}</Link><span>{txt("مساحة الشهادات","Certificate workspace")}</span></div><div className="form-heading"><h1>{txt("تعديل الشهادة","Edit certificate")}</h1><p>{txt("التغييرات تحفظ كسجل إصدار جديد.","Changes are saved as a new version.")}</p></div>{data?<CertificateForm initial={data} certificateId={id}/>:error?<div className="form-error" role="alert">{error}</div>:<p>{txt("جارٍ تحميل الشهادة…","Loading certificate…")}</p>}</main></PortalFrame>;
 }

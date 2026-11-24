@@ -6,8 +6,8 @@ import { db } from "@/lib/db";
 export async function getActor() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id || !session.user.organizationId) return null;
-  const user = await db.user.findUnique({ where: { id: session.user.id }, select: { id: true, name: true, email: true, role: true, organizationId: true } });
-  if (!user || user.organizationId !== session.user.organizationId) return null;
+  const user = await db.user.findUnique({ where: { id: session.user.id }, select: { id: true, name: true, email: true, role: true, organizationId: true, isActive: true } });
+  if (!user || !user.isActive || user.organizationId !== session.user.organizationId) return null;
   return user;
 }
 

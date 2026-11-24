@@ -2,18 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Image from "next/image";
 import { BadgeCheck, BadgeX, Clock3, Printer, SearchX, ShieldCheck } from "lucide-react";
+import PortalFrame from "@/components/layout/portal-frame";
 import { useLocale } from "@/components/locale-provider";
 import { t } from "@/lib/locale";
-import LocaleToggle from "@/components/locale-toggle";
 
 type Status = "VALID" | "EXPIRED" | "REVOKED" | "INVALID" | "RATE_LIMITED" | "SERVICE_UNAVAILABLE";
 type PublicCertificate = {
   certificateNumber: string; name: string; nameAr: string; nationality: string; nationalityAr: string;
   gender: string; profession: string; professionAr: string; organization: string; organizationAr: string;
   organizationNumber: string; licenseNumber: string; municipality: string; city: string;
-  issueDate: string; expiryDate: string; photoAvailable: boolean;
+  issueDate: string; expiryDate: string;
 };
 type Result = { status: Status; certificate?: PublicCertificate };
 
@@ -25,6 +24,7 @@ export default function VerifyPage() {
   const { locale } = useLocale();
   const txt = (ar: string, en: string) => t(locale, ar, en);
   const [result, setResult] = useState<Result | null>(null);
+  const [checkedAt, setCheckedAt] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
     fetch(`/api/verify/${encodeURIComponent(token)}`, { cache: "no-store" })
@@ -34,6 +34,7 @@ export default function VerifyPage() {
         if (!active) return;
         if (!payload) { setResult({ status: "SERVICE_UNAVAILABLE" }); return; }
         setResult(payload as Result);
+        setCheckedAt(new Date().toISOString());
       });
     return () => { active = false; };
   }, [token]);
@@ -50,15 +51,14 @@ export default function VerifyPage() {
   const value = (en: string, ar: string) => locale === "ar" ? ar || en : en || ar;
   const date = (raw: string) => new Date(raw).toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US", { year: "numeric", month: "long", day: "numeric" });
 
-  return <main className="verify-page" dir={locale === "ar" ? "rtl" : "ltr"}>
-    <header className="verify-brand"><span className="brand-mark"><ShieldCheck size={22} /></span><span><b>رِفد</b><small>{txt("التحقق من الشهادات", "Certificate verification")}</small></span><LocaleToggle /></header>
+  return <PortalFrame><main className="verify-page" dir={locale === "ar" ? "rtl" : "ltr"}>
     <article className="verify-card">
       <div className="private-document"><ShieldCheck size={17} /><span>{txt("شهادة شركة خاصة — ليست مستنداً حكومياً", "Private Company Certificate – Not a Government Document")}</span></div>
       {!result ? <div className="verify-loading">{txt("جارٍ التحقق من الشهادة…", "Verifying certificate…")}</div> : <>
         <div className={`verify-state ${statusColors[result.status]}`}>{Icon && <Icon size={25} />}<b>{statusLabel}</b></div>
+        {checkedAt && <p className="verify-timestamp">{txt("وقت التحقق", "Verified at")}: <time dir="ltr">{new Intl.DateTimeFormat(locale === "ar" ? "ar-SA" : "en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(checkedAt))}</time></p>}
         {result.certificate && <>
           <section className="verify-holder">
-            {result.certificate.photoAvailable && <Image className="verify-photo" src={`/api/verify/${encodeURIComponent(token)}/photo`} alt={txt("صورة حامل الشهادة", "Certificate holder")} width={76} height={90} unoptimized />}
             <div><small>{txt("حامل الشهادة", "Certificate holder")}</small><h1>{value(result.certificate.name, result.certificate.nameAr)}</h1><span>{value(result.certificate.nameAr, result.certificate.name)}</span></div>
           </section>
           <div className="verify-number"><small>{txt("رقم الشهادة", "Certificate number")}</small><b dir="ltr">{result.certificate.certificateNumber}</b></div>
@@ -79,9 +79,8 @@ export default function VerifyPage() {
         </>}
         <button type="button" className="verify-print" onClick={() => window.print()}><Printer size={16} />{txt("طباعة تفاصيل التحقق", "Print verification details")}</button>
       </>}
-      <p className="verify-note">{txt("تعرض هذه الصفحة المعلومات المعتمدة للتحقق فقط. لا يتم عرض رقم الهوية أو بيانات الدخول أو أي معرّفات داخلية.", "Only approved information is shown for verification. Identity numbers, login information, and internal identifiers are never displayed.")}</p>
+      <p className="verify-note">{txt("تعرض هذه الصفحة المعلومات المعتمدة للتحقق فقط. لا يتم عرض رقم الهوية أو الصورة الشخصية أو بيانات الدخول.", "Only approved information is shown for verification. Identity numbers, profile photos, and login details are not displayed.")}</p>
       <p className="verify-disclaimer">{txt("هذه شهادة صادرة عن شركة خاصة مستقلة، وليست وثيقة حكومية ولا تمثل أي جهة حكومية.", "This certificate is issued by an independent private company. It is not a government document and does not represent any government authority.")}</p>
     </article>
-    <footer className="verify-footer">© Rifd — {txt("نظام خاص لإدارة الشهادات الصحية", "Private health certificate system")}</footer>
-  </main>;
+  </main></PortalFrame>;
 }

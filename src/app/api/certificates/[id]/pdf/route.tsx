@@ -11,7 +11,7 @@ import { getCertificateDisplayStatus } from "@/lib/certificate-status";
 
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { actor, response } = await requireRole(["OWNER", "ADMIN", "EDITOR", "VIEWER"]);
+  const { actor, response } = await requireRole(["OWNER", "ADMIN", "STAFF", "EDITOR", "VIEWER"]);
   if (response || !actor) return response ?? NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
   const { id } = await params;
   const certificate = await db.certificate.findFirst({ where: { id, organizationId: actor.organizationId } });

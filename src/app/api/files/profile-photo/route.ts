@@ -13,7 +13,7 @@ function imageType(bytes: Uint8Array): { mime: string; extension: string } | nul
 }
 
 export async function POST(request: NextRequest) {
-  const { actor, response } = await requireRole(["OWNER", "ADMIN", "EDITOR"]);
+  const { actor, response } = await requireRole(["OWNER", "ADMIN", "STAFF", "EDITOR"]);
   if (response || !actor) return response ?? NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
   const storage = getStorage();
   if (!storage) return NextResponse.json({ error: "FILE_STORAGE_NOT_CONFIGURED" }, { status: 503 });

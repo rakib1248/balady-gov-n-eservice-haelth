@@ -6,7 +6,7 @@ import { certificateSnapshot } from "@/lib/certificate-snapshot";
 
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { actor, response } = await requireRole(["OWNER", "ADMIN", "EDITOR"]);
+  const { actor, response } = await requireRole(["OWNER", "ADMIN", "STAFF", "EDITOR"]);
   if (response || !actor) return response ?? NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
   const { id } = await params;
   const certificate = await db.certificate.findFirst({ where: { id, organizationId: actor.organizationId }, select: {
@@ -18,7 +18,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { actor, response } = await requireRole(["OWNER", "ADMIN", "EDITOR"]);
+  const { actor, response } = await requireRole(["OWNER", "ADMIN", "STAFF", "EDITOR"]);
   if (response || !actor) return response ?? NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
   const { id } = await params;
   const parsed = certificateInput.safeParse(await request.json().catch(() => null));

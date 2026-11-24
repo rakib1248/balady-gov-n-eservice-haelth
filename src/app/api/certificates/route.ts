@@ -8,7 +8,7 @@ import { getCertificateDisplayStatus } from "@/lib/certificate-status";
 
 
 export async function GET(request: NextRequest) {
-  const { actor, response } = await requireRole(["OWNER", "ADMIN", "EDITOR", "VIEWER"]);
+  const { actor, response } = await requireRole(["OWNER", "ADMIN", "STAFF", "EDITOR", "VIEWER"]);
   if (response || !actor) return response;
   const page = Math.max(1, Number(request.nextUrl.searchParams.get("page") ?? 1) || 1);
   const pageSize = Math.min(100, Math.max(1, Number(request.nextUrl.searchParams.get("pageSize") ?? 20) || 20));
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { actor, response } = await requireRole(["OWNER", "ADMIN", "EDITOR"]);
+  const { actor, response } = await requireRole(["OWNER", "ADMIN", "STAFF", "EDITOR"]);
   if (response || !actor) return response;
   const parsed = certificateInput.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "VALIDATION_ERROR", issues: parsed.error.issues }, { status: 422 });

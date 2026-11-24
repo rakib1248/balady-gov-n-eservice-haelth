@@ -25,8 +25,8 @@ export const authOptions: NextAuthOptions = {
       const window = new Date(Math.floor(Date.now() / 60_000) * 60_000);
       const attempts = await db.$queryRaw<Array<{ hits: number }>>`INSERT INTO "PublicRateLimit" ("key", "window", "hits") VALUES (${limitKey}, ${window}, 1) ON CONFLICT ("key") DO UPDATE SET "hits" = CASE WHEN "PublicRateLimit"."window" = EXCLUDED."window" THEN "PublicRateLimit"."hits" + 1 ELSE 1 END, "window" = EXCLUDED."window" RETURNING "hits"`;
       if ((attempts[0]?.hits ?? 0) > 10) return null;
-      const user = await db.user.findUnique({ where: { email }, select: { id: true, name: true, email: true, passwordHash: true, role: true, organizationId: true } });
-      if (!user || !(await compare(parsed.data.password, user.passwordHash))) return null;
+      const user = await db.user.findUnique({ where: { email }, select: { id: true, name: true, email: true, passwordHash: true, role: true, organizationId: true, isActive: true } });
+      if (!user || !user.isActive || !(await compare(parsed.data.password, user.passwordHash))) return null;
       return { id: user.id, name: user.name, email: user.email, role: user.role, organizationId: user.organizationId };
     },
   })],

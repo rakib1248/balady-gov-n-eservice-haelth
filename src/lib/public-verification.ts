@@ -2,7 +2,7 @@ import "server-only";
 
 import { createHash, createHmac } from "node:crypto";
 import { db } from "@/lib/db";
-import { getCertificateDisplayStatus } from "@/lib/certificate-status";
+import { getCertificateVerificationStatus } from "@/lib/certificate-status";
 
 export type VerificationStatus = "VALID" | "EXPIRED" | "REVOKED" | "INVALID" | "RATE_LIMITED" | "SERVICE_UNAVAILABLE";
 
@@ -45,7 +45,7 @@ export async function resolvePublicVerification(token: string, clientAddress: st
     profession: true, professionAr: true, issueDate: true, expiryDate: true, status: true, photoKey: true,
     organizationName: true, organizationNameAr: true, organizationNumber: true, licenseNumber: true, municipality: true, city: true,
   } });
-  const status = record ? getCertificateDisplayStatus(record.status, record.expiryDate) : "INVALID";
+  const status = getCertificateVerificationStatus(record?.status ?? null, record?.expiryDate ?? null);
   await db.verificationLog.create({ data: { certificateId: record?.id ?? null, tokenHash, outcome: status, ipHash } });
   if (!record) return { status };
 
