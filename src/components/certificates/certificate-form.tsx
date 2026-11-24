@@ -4,26 +4,27 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, LoaderCircle } from "lucide-react";
+import { CheckCircle2, LoaderCircle, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLocale } from "@/components/locale-provider";
 import { t } from "@/lib/locale";
 
 const fields = [
-  { key: "fullNameAr", label: "الاسم الكامل بالعربية", required: true }, { key: "fullName", label: "Full name (English)", required: true, ltr: true },
-  { key: "identityNumber", label: "رقم الهوية / الإقامة", required: true, ltr: true }, { key: "gender", label: "الجنس", type: "select", required: true },
-  { key: "nationalityAr", label: "الجنسية بالعربية", required: true }, { key: "nationality", label: "Nationality (English)", required: true, ltr: true },
-  { key: "professionAr", label: "المهنة بالعربية", required: true }, { key: "profession", label: "Profession (English)", required: true, ltr: true },
-  { key: "certificateNumber", label: "رقم الشهادة", required: true, ltr: true }, { key: "issueDate", label: "تاريخ الإصدار", type: "date", required: true },
-  { key: "expiryDate", label: "تاريخ الانتهاء", type: "date", required: true }, { key: "programExpiryDate", label: "انتهاء البرنامج التثقيفي", type: "date", required: true },
-  { key: "hijriIssueDate", label: "تاريخ الإصدار الهجري" }, { key: "hijriExpiryDate", label: "تاريخ الانتهاء الهجري" },
-  { key: "organizationNameAr", label: "اسم المنشأة بالعربية", required: true }, { key: "organizationName", label: "Organization name", required: true, ltr: true },
+  { key: "municipality", label: "الأمانة", required: true }, { key: "city", label: "البلدية", required: true },
+  { key: "fullName", label: "الاسم", required: true, ltr: true }, { key: "identityNumber", label: "رقم الهوية / الإقامة", required: true, ltr: true },
+  { key: "gender", label: "الجنس", type: "select", required: true }, { key: "nationalityAr", label: "الجنسية", required: true },
+  { key: "certificateNumber", label: "رقم الشهادة الصحية", required: true, ltr: true }, { key: "professionAr", label: "المهنة", required: true },
+  { key: "hijriIssueDate", label: "تاريخ إصدار الشهادة الصحية هجري" }, { key: "issueDate", label: "تاريخ إصدار الشهادة الصحية ميلادي", type: "date", required: true },
+  { key: "hijriExpiryDate", label: "تاريخ نهاية الشهادة الصحية هجري" }, { key: "expiryDate", label: "تاريخ نهاية الشهادة الصحية ميلادي", type: "date", required: true },
+  { key: "programType", label: "نوع البرنامج التثقيفي", required: true }, { key: "programExpiryDate", label: "تاريخ انتهاء البرنامج التثقيفي", type: "date", required: true },
   { key: "organizationNumber", label: "رقم المنشأة", required: true, ltr: true }, { key: "licenseNumber", label: "رقم الرخصة", required: true, ltr: true },
-  { key: "municipality", label: "الأمانة", required: true }, { key: "city", label: "البلدية / المدينة", required: true }, { key: "programType", label: "نوع البرنامج التثقيفي", required: true },
+  { key: "fullNameAr", label: "الاسم الكامل بالعربية", required: true }, { key: "nationality", label: "الجنسية بالإنجليزية", required: true, ltr: true },
+  { key: "profession", label: "المهنة بالإنجليزية", required: true, ltr: true }, { key: "organizationNameAr", label: "اسم المنشأة بالعربية", required: true },
+  { key: "organizationName", label: "اسم المنشأة بالإنجليزية", required: true, ltr: true },
 ] as const;
 const labelsEn: Record<string, string> = {
-  fullNameAr: "Full name (Arabic)", fullName: "Full name (English)", identityNumber: "Identity / residency number", gender: "Gender",
+  fullNameAr: "Full name (Arabic)", fullName: "Full name", identityNumber: "Identity / residency number", gender: "Gender",
   nationalityAr: "Nationality (Arabic)", nationality: "Nationality (English)", professionAr: "Profession (Arabic)", profession: "Profession (English)",
   certificateNumber: "Certificate number", issueDate: "Issue date", expiryDate: "Expiry date", programExpiryDate: "Training program expiry",
   hijriIssueDate: "Issue date (Hijri)", hijriExpiryDate: "Expiry date (Hijri)", organizationNameAr: "Organization name (Arabic)", organizationName: "Organization name (English)",
@@ -72,9 +73,15 @@ export default function CertificateForm({ initial, certificateId }: { initial?: 
   }
   if (created) return <section className="created-card"><CheckCircle2 size={38}/><h2>{txt("تم إصدار الشهادة", "Certificate issued")}</h2><p>{txt("رقم الشهادة:", "Certificate number:")} <b dir="ltr">{created.number}</b></p><p>{txt("رابط التحقق الفريد. يظهر رمز QR عند معاينة ملف PDF.", "The unique verification link. Its QR code appears in the PDF preview.")}</p><code dir="ltr">{`${window.location.origin}/verify/${created.token}`}</code><div><Link href="/certificates">{txt("قائمة الشهادات", "Certificate list")}</Link><Link href={`/certificates/${created.id}/pdf`}>{txt("معاينة وتنزيل PDF", "Preview and download PDF")}</Link><button onClick={()=>router.push(`/certificates/${created.id}/edit`)}>{txt("تعديل البيانات", "Edit details")}</button></div></section>;
   return <form className="certificate-form" onSubmit={submit}>
-    <section className="form-section"><div className="section-title"><span>١</span><div><h2>{txt("البيانات الشخصية", "Personal information")}</h2><p>{txt("معلومات تعريف المستفيد كما ستظهر على الشهادة", "Beneficiary details as they will appear on the certificate")}</p></div></div><div className="fields-grid">{fields.slice(0,8).map((field)=> <Field key={field.key} field={field} value={initial?.[field.key]}/>)}</div><label className="photo-upload"><span>{txt("الصورة الشخصية", "Profile photo")} <small>JPG أو PNG · {txt("بحد أقصى ٣ ميغابايت", "up to 3 MB")}</small></span><input name="profilePhoto" type="file" accept="image/jpeg,image/png" onChange={(e)=>selectPhoto(e.target.files?.[0])}/>{photoName&&<small>{photoName}</small>}</label>{!photoPreviewFailed&&(selectedPhotoPreview||(certificateId&&initial?.photoKey))&&<div className="photo-preview-frame"><Image src={selectedPhotoPreview||`/api/certificates/${encodeURIComponent(certificateId!)}/photo`} alt={txt("معاينة الصورة كاملة", "Full image preview")} width={180} height={150} unoptimized onError={()=>setPhotoPreviewFailed(true)}/></div>}</section>
-    <section className="form-section"><div className="section-title"><span>٢</span><div><h2>{txt("بيانات الشهادة", "Certificate information")}</h2><p>{txt("رقم الشهادة والتواريخ المرتبطة بها", "Certificate number and dates")}</p></div></div><div className="fields-grid">{fields.slice(8,14).map((field)=><Field key={field.key} field={field} value={initial?.[field.key]}/>)}</div></section>
-    <section className="form-section"><div className="section-title"><span>٣</span><div><h2>{txt("بيانات المنشأة والبرنامج", "Organization and training")}</h2><p>{txt("المنشأة المرخصة والبرنامج التثقيفي", "Licensed organization and education program")}</p></div></div><div className="fields-grid">{fields.slice(14).map((field)=><Field key={field.key} field={field} value={initial?.[field.key]}/>)}</div></section>
+    <section className="certificate-form-fields" aria-label={txt("بيانات الشهادة الصحية", "Health certificate details")}>
+      <div className="certificate-photo-block">
+        <div className="photo-preview-frame">
+          {!photoPreviewFailed&&(selectedPhotoPreview||(certificateId&&initial?.photoKey))?<Image src={selectedPhotoPreview||`/api/certificates/${encodeURIComponent(certificateId!)}/photo`} alt={txt("معاينة الصورة كاملة", "Full image preview")} width={180} height={165} unoptimized onError={()=>setPhotoPreviewFailed(true)}/>:<UserRound size={48} aria-hidden="true"/>}
+        </div>
+        <label className="photo-upload"><span>{txt("الصورة الشخصية", "Profile photo")} <small>JPG أو PNG · {txt("بحد أقصى ٣ ميغابايت", "up to 3 MB")}</small></span><input name="profilePhoto" type="file" accept="image/jpeg,image/png" onChange={(e)=>selectPhoto(e.target.files?.[0])}/>{photoName&&<small>{photoName}</small>}</label>
+      </div>
+      <div className="fields-grid certificate-fields-grid">{fields.map((field)=><Field key={field.key} field={field} value={initial?.[field.key]}/>)}</div>
+    </section>
     {error&&<p className="form-error" role="alert">{error}</p>}<div className="form-actions"><Link href="/certificates">{txt("إلغاء", "Cancel")}</Link><Button disabled={saving} className="primary-button">{saving&&<LoaderCircle size={16} className="spin"/>}{certificateId?txt("حفظ التعديلات", "Save changes"):txt("إصدار الشهادة", "Issue certificate")}</Button></div>
   </form>;
 }

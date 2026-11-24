@@ -53,25 +53,26 @@ export default function VerifyPage() {
 
   return <PortalFrame><main className="verify-page" dir={locale === "ar" ? "rtl" : "ltr"}>
     <article className="verify-card">
+      <h1 className="verify-title">{txt("شهادة صحية", "Health Certificate")}</h1>
       <div className="private-document"><ShieldCheck size={17} /><span>{txt("شهادة شركة خاصة — ليست مستنداً حكومياً", "Private Company Certificate – Not a Government Document")}</span></div>
       {!result ? <div className="verify-loading">{txt("جارٍ التحقق من الشهادة…", "Verifying certificate…")}</div> : <>
         <div className={`verify-state ${statusColors[result.status]}`}>{Icon && <Icon size={25} />}<b>{statusLabel}</b></div>
         {checkedAt && <p className="verify-timestamp">{txt("وقت التحقق", "Verified at")}: <time dir="ltr">{new Intl.DateTimeFormat(locale === "ar" ? "ar-SA" : "en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(checkedAt))}</time></p>}
         {result.certificate && <>
-          <section className="verify-holder">
-            <div><small>{txt("حامل الشهادة", "Certificate holder")}</small><h1>{value(result.certificate.name, result.certificate.nameAr)}</h1><span>{value(result.certificate.nameAr, result.certificate.name)}</span></div>
-          </section>
-          <div className="verify-number"><small>{txt("رقم الشهادة", "Certificate number")}</small><b dir="ltr">{result.certificate.certificateNumber}</b></div>
           <div className="verify-fields">
             {[
+              [txt("الاسم", "Name"), value(result.certificate.name, result.certificate.nameAr)],
+              [txt("رقم الشهادة الصحية", "Health certificate number"), result.certificate.certificateNumber],
+            ].map(([label, fieldValue]) => <div key={label}><small>{label}</small><b dir={label === txt("رقم الشهادة الصحية", "Health certificate number") ? "ltr" : undefined}>{fieldValue || "—"}</b></div>)}
+            {[
+              [txt("الأمانة", "Municipality"), result.certificate.municipality],
+              [txt("البلدية / الفرع", "Municipality branch"), result.certificate.city],
               [txt("الجنسية", "Nationality"), value(result.certificate.nationality, result.certificate.nationalityAr)],
               [txt("الجنس", "Gender"), result.certificate.gender],
               [txt("المهنة", "Profession"), value(result.certificate.profession, result.certificate.professionAr)],
               [txt("المنشأة", "Organization"), value(result.certificate.organization, result.certificate.organizationAr)],
               [txt("رقم المنشأة", "Organization number"), result.certificate.organizationNumber],
               [txt("رقم الترخيص", "License number"), result.certificate.licenseNumber],
-              [txt("البلدية", "Municipality"), result.certificate.municipality],
-              [txt("المدينة", "City"), result.certificate.city],
               [txt("تاريخ الإصدار", "Issue date"), date(result.certificate.issueDate)],
               [txt("تاريخ الانتهاء", "Expiry date"), date(result.certificate.expiryDate)],
             ].map(([label, fieldValue]) => <div key={label}><small>{label}</small><b>{fieldValue || "—"}</b></div>)}
