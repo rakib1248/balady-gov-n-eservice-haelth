@@ -88,12 +88,12 @@ export default function PortalHeader({ signedIn = false }: { signedIn?: boolean 
   return (
     <header className="portal-header" ref={headerRef}>
       <div className="portal-header-inner">
-        <Link className="portal-brand" href="/" onClick={closeMenus} aria-label={txt("الصفحة الرئيسية", "Home page")}>
+        <a className="portal-brand" href="https://balady.gov.sa/ar" target="_blank" rel="noopener noreferrer" onClick={closeMenus} aria-label={txt("فتح موقع بلدي الرسمي في تبويب جديد", "Open the official Balady website in a new tab")}>
           <span className="portal-header-reference-logo" aria-hidden="true">
             {logoFailed ? <ShieldCheck size={29} /> : <img src={headerLogoUrl} alt="" onError={() => setLogoFailed(true)} />}
             <small>{txt("مرجع بصري · لا توجد صلة رسمية", "Visual reference · no affiliation")}</small>
           </span>
-        </Link>
+        </a>
 
         <button className="portal-menu-toggle" type="button" aria-label={mobileOpen ? txt("إغلاق القائمة", "Close menu") : txt("فتح القائمة", "Open menu")} aria-expanded={mobileOpen} aria-controls="portal-main-navigation" onClick={() => setMobileOpen((value) => !value)}>
           {mobileOpen ? <X size={21} /> : <Menu size={21} />}
@@ -110,29 +110,31 @@ export default function PortalHeader({ signedIn = false }: { signedIn?: boolean 
               if (event.target instanceof HTMLElement && event.target.matches(":focus-visible")) setOpenMenuId(item.id);
             }}
           >
-            <button className="portal-menu-trigger" type="button" aria-expanded={openMenuId === item.id} aria-controls={`portal-menu-panel-${item.id}`} onClick={() => {
-              if (window.matchMedia("(min-width: 901px) and (hover: hover) and (pointer: fine)").matches) { setOpenMenuId(item.id); return; }
-              setOpenMenuId((current) => current === item.id ? null : item.id);
-            }}>
-              {t(locale, item.label.ar, item.label.en)}<ChevronDown size={14} aria-hidden="true" />
-            </button>
-            <div id={`portal-menu-panel-${item.id}`} className="portal-dropdown-panel" aria-label={t(locale, item.label.ar, item.label.en)}>
-              <div className="portal-dropdown-groups">
-                {item.children?.map((group) => {
-                  if (group.presentation === "links") return <section className="portal-dropdown-group portal-dropdown-group--links" key={group.id}>
-                    <div className="portal-dropdown-group-links">{group.children?.map((child) => renderSubmenuNode(child))}</div>
-                  </section>;
-                  if (group.presentation === "nested") return <section className="portal-dropdown-group portal-dropdown-group--nested" key={group.id}>
-                    {renderSubmenuNode(group)}
-                  </section>;
-                  const isPlainTitle = group.presentation === "plain" || group.presentation === "group-plain";
-                  return <section className={`portal-dropdown-group${group.presentation === "plain" ? " portal-dropdown-group--plain" : ""}`} key={group.id}>
-                    <Link className={`portal-dropdown-group-title${isPlainTitle ? " portal-dropdown-group-title--plain" : ""}`} href={group.href} onClick={closeMenus}>{t(locale, group.label.ar, group.label.en)}</Link>
-                    <div className="portal-dropdown-group-links">{group.children?.map((child) => renderSubmenuNode(child))}</div>
-                  </section>;
-                })}
+            {item.children?.length ? <>
+              <button className="portal-menu-trigger" type="button" aria-expanded={openMenuId === item.id} aria-controls={`portal-menu-panel-${item.id}`} onClick={() => {
+                if (window.matchMedia("(min-width: 901px) and (hover: hover) and (pointer: fine)").matches) { setOpenMenuId(item.id); return; }
+                setOpenMenuId((current) => current === item.id ? null : item.id);
+              }}>
+                {t(locale, item.label.ar, item.label.en)}<ChevronDown size={14} aria-hidden="true" />
+              </button>
+              <div id={`portal-menu-panel-${item.id}`} className="portal-dropdown-panel" aria-label={t(locale, item.label.ar, item.label.en)}>
+                <div className="portal-dropdown-groups">
+                  {item.children.map((group) => {
+                    if (group.presentation === "links") return <section className="portal-dropdown-group portal-dropdown-group--links" key={group.id}>
+                      <div className="portal-dropdown-group-links">{group.children?.map((child) => renderSubmenuNode(child))}</div>
+                    </section>;
+                    if (group.presentation === "nested") return <section className="portal-dropdown-group portal-dropdown-group--nested" key={group.id}>
+                      {renderSubmenuNode(group)}
+                    </section>;
+                    const isPlainTitle = group.presentation === "plain" || group.presentation === "group-plain";
+                    return <section className={`portal-dropdown-group${group.presentation === "plain" ? " portal-dropdown-group--plain" : ""}`} key={group.id}>
+                      <Link className={`portal-dropdown-group-title${isPlainTitle ? " portal-dropdown-group-title--plain" : ""}`} href={group.href} onClick={closeMenus}>{t(locale, group.label.ar, group.label.en)}</Link>
+                      <div className="portal-dropdown-group-links">{group.children?.map((child) => renderSubmenuNode(child))}</div>
+                    </section>;
+                  })}
+                </div>
               </div>
-            </div>
+            </> : <Link className="portal-menu-trigger" href={item.href} onClick={closeMenus}>{t(locale, item.label.ar, item.label.en)}</Link>}
           </div>)}
           <div className="portal-nav-actions">
             {headerUtilities.map((utility) => <Link className="portal-header-utility" key={utility.id} href={utility.href} onClick={closeMenus}>{utility.id === "search" && <Search size={17} aria-hidden="true" />}{t(locale, utility.label.ar, utility.label.en)}</Link>)}

@@ -19,7 +19,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const token = decryptVerificationToken(certificate.verificationTokenCiphertext);
   const base = process.env.APP_BASE_URL ?? request.nextUrl.origin;
   const verificationUrl = `${base.replace(/\/$/, "")}/verify/${token}`;
-  const qrDataUrl = await QRCode.toDataURL(verificationUrl, { errorCorrectionLevel: "H", margin: 1, width: 280 });
+  const qrDataUrl = await QRCode.toDataURL(verificationUrl, {
+    errorCorrectionLevel: "H",
+    margin: 2,
+    width: 480,
+    type: "image/png",
+    color: { dark: "#19352a", light: "#ffffff" },
+  });
   let photoDataUrl: string | undefined;
   if (certificate.photoKey) {
     const storage = getStorage();

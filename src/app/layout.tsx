@@ -6,8 +6,15 @@ import "./globals.css";
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   return {
-    title: locale === "ar" ? "رِفد | إدارة الشهادات الصحية" : "Rifd | Health Certificate Management",
-    description: locale === "ar" ? "نظام خاص لإدارة الشهادات الصحية والتحقق منها." : "Private health certificate management and verification.",
+    title: "Issue Health Certificate",
+    description: locale === "ar"
+      ? "نظام خاص لإدارة وإصدار الشهادات الصحية والتحقق منها."
+      : "Manage, issue, and verify health certificates with the Health Certificate Management System.",
+    icons: {
+      icon: [{ url: "/favIcon.png", type: "image/png", sizes: "867x871" }],
+      shortcut: "/favIcon.png",
+      apple: "/favIcon.png",
+    },
     robots: { index: false, follow: false },
   };
 }

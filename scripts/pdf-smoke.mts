@@ -35,6 +35,12 @@ const pdf = await renderToBuffer(createElement(CertificatePdf, {
 }) as unknown as ReactElement<DocumentProps>);
 const pdfPath = "/tmp/rifd-private-certificate-smoke.pdf";
 await writeFile(pdfPath, pdf);
+const pdfInfo = execFileSync("pdfinfo", [pdfPath], { encoding: "utf8" });
+if (!/^Pages:\s+1\s*$/m.test(pdfInfo) || !/^Page size:\s+595\.28 x 841\.89 pts \(A4\)\s*$/m.test(pdfInfo)) {
+  throw new Error("The generated certificate PDF must be exactly one A4 page.");
+}
+const text = execFileSync("pdftotext", [pdfPath, "-"], { encoding: "utf8" });
+if (!text.includes("Scan to Verify")) throw new Error("The PDF is missing the QR scan instruction.");
 execFileSync("pdftoppm", ["-f", "1", "-singlefile", "-png", "-r", "120", pdfPath, "/tmp/rifd-private-certificate-smoke"]);
 const png = PNG.sync.read(await (await import("node:fs/promises")).readFile("/tmp/rifd-private-certificate-smoke.png"));
 const decoded = jsQR(new Uint8ClampedArray(png.data), png.width, png.height);

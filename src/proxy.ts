@@ -3,5 +3,5 @@ import { withAuth } from "next-auth/middleware";
 export const proxy = withAuth({ pages: { signIn: "/login" } });
 
 export const config = {
-  matcher: ["/((?!login|verify|api/auth|api/verify|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!login|verify|api/auth|api/verify|_next/static|_next/image|favicon.ico|favIcon.png).*)"],
 };
