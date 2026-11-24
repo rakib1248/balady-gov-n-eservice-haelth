@@ -1,69 +1,57 @@
-import Image from "next/image";
+import Link from "next/link";
+import { Activity, ArrowDownLeft, Clock3, FileBadge, FileCheck2, FilePlus2, LayoutDashboard, Search, ShieldCheck } from "lucide-react";
+import { db } from "@/lib/db";
+import SignOutButton from "@/components/auth/sign-out-button";
+import { getActor } from "@/lib/authorization";
+import { getCertificateDisplayStatus } from "@/lib/certificate-status";
+import { t, type Locale } from "@/lib/locale";
+import { getLocale } from "@/lib/locale-server";
+import LocaleToggle from "@/components/locale-toggle";
 
-export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+const colors = ["mint", "peach", "blue", "lilac"];
+const number = (n: number, locale: Locale) => new Intl.NumberFormat(locale === "ar" ? "ar-SA" : "en-US").format(n);
+const arabicDate = (date: Date, locale: Locale) => new Intl.DateTimeFormat(locale === "ar" ? "ar-SA" : "en-US", { dateStyle: "full" }).format(date);
+const dateOnly = (date: Date, locale: Locale) => new Intl.DateTimeFormat(locale === "ar" ? "ar-SA" : "en-US", { dateStyle: "medium" }).format(date);
+
+export default async function Home() {
+  const locale = await getLocale();
+  const txt = (ar: string, en: string) => t(locale, ar, en);
+  const actor = await getActor();
+  if (!actor?.organizationId) return null;
+  const now = new Date();
+  const endOfMonth = new Date(now.getTime() + 30 * 86400000);
+  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+  const [organization, total, active, revoked, expired, expiring, recent, createdRecently] = await Promise.all([
+    db.organization.findUnique({ where: { id: actor.organizationId }, select: { name: true, nameAr: true } }),
+    db.certificate.count({ where: { organizationId: actor.organizationId } }),
+    db.certificate.count({ where: { organizationId: actor.organizationId, status: "VALID", expiryDate: { gte: now } } }),
+    db.certificate.count({ where: { organizationId: actor.organizationId, status: "REVOKED" } }),
+    db.certificate.count({ where: { organizationId: actor.organizationId, status: "VALID", expiryDate: { lt: now } } }),
+    db.certificate.count({ where: { organizationId: actor.organizationId, status: "VALID", expiryDate: { gt: now, lte: endOfMonth } } }),
+    db.certificate.findMany({ where: { organizationId: actor.organizationId }, orderBy: { createdAt: "desc" }, take: 4, select: { id: true, fullName: true, fullNameAr: true, certificateNumber: true, organizationName: true, organizationNameAr: true, issueDate: true, expiryDate: true, status: true } }),
+    db.certificate.findMany({ where: { organizationId: actor.organizationId, createdAt: { gte: sixMonthsAgo } }, select: { createdAt: true } }),
+  ]);
+  const months = Array.from({ length: 6 }, (_, index) => { const date = new Date(now.getFullYear(), now.getMonth() - 5 + index, 1); return { date, count: createdRecently.filter((item) => item.createdAt.getFullYear() === date.getFullYear() && item.createdAt.getMonth() === date.getMonth()).length }; });
+  const max = Math.max(1, ...months.map((month) => month.count));
+  const chartLine = months.map((month, index) => `${index ? "L" : "M"} ${index * 136},${160 - (month.count / max) * 135}`).join(" ");
+  const chartArea = `${chartLine} L680,180 L0,180 Z`;
+  const stats = [
+    { label: txt("إجمالي الشهادات", "Total certificates"), value: total, icon: FileBadge, color: "green", sub: txt("في مساحة شركتك", "In your workspace") },
+    { label: txt("الشهادات السارية", "Active certificates"), value: active, icon: FileCheck2, color: "teal", sub: txt("صالحة حتى تاريخ الانتهاء", "Valid through the expiry date") },
+    { label: txt("تنتهي خلال 30 يوماً", "Expiring in 30 days"), value: expiring, icon: Clock3, color: "amber", sub: txt("تحتاج متابعة وتجديداً", "Review and renew these certificates") },
+    { label: txt("الشهادات المنتهية / الملغاة", "Expired / revoked certificates"), value: expired + revoked, icon: Activity, color: "rose", sub: `${number(expired,locale)} ${txt("منتهية", "expired")} · ${number(revoked,locale)} ${txt("ملغاة", "revoked")}` },
+  ];
+  const name = actor.name ?? "مدير الشركة";
+  const roleLabel = actor.role === "OWNER" ? txt("مالك مساحة العمل", "Workspace owner") : actor.role === "ADMIN" ? txt("مدير النظام", "Administrator") : actor.role === "EDITOR" ? txt("محرر", "Editor") : txt("مشاهد", "Viewer");
+  return <div className="app-shell" dir={locale==="ar"?"rtl":"ltr"}>
+    <aside className="sidebar"><Link className="brand" href="/"><span className="brand-mark"><ShieldCheck size={21}/></span><span><b>رِفد</b><small>{txt("نظام الشهادات الصحية", "Health certificate management")}</small></span></Link><div className="org-switch"><span className="org-icon">ر</span><span><b>{locale==="ar"?organization?.nameAr:organization?.name ?? "Company workspace"}</b><small>{txt("مساحة العمل", "Workspace")}</small></span></div><div className="side-label">{txt("القائمة الرئيسية", "MAIN MENU")}</div><nav className="nav-list"><Link className="nav-item active" href="/"><LayoutDashboard/><span>{txt("لوحة التحكم", "Dashboard")}</span></Link><Link className="nav-item" href="/certificates"><FileBadge/><span>{txt("الشهادات", "Certificates")}</span><em>{number(total,locale)}</em></Link></nav><div className="sidebar-bottom"><div className="user-profile"><span className="avatar admin-avatar">{name.charAt(0)}</span><span><b>{name}</b><small>{roleLabel}</small></span></div></div></aside>
+    <main className="main-area"><header className="topbar"><div className="breadcrumbs">{txt("الرئيسية", "Home")} <span>/</span> {txt("لوحة التحكم", "Dashboard")}</div><div className="top-actions"><LocaleToggle/><span className="top-divider"/><span className="avatar top-avatar">{name.charAt(0)}</span><span className="top-user"><b>{name}</b><small>{roleLabel}</small></span><SignOutButton/></div></header><div className="content-wrap">
+      <section className="welcome-row"><div><div className="eyebrow"><span/> {arabicDate(now,locale)}</div><h1>{txt("مرحباً", "Welcome")}, {name} <span>👋</span></h1><p>{txt("إليك نظرة سريعة على شهاداتك الصحية اليوم.", "Here is a quick look at your health certificates today.")}</p></div><Link className="primary-button" href="/certificates/new"><FilePlus2 size={18}/> {txt("إصدار شهادة جديدة", "Issue a certificate")}</Link></section>
+      <section className="stats-grid">{stats.map(({label,value,icon:Icon,color,sub})=><article className="stat-card" key={label}><div className="stat-top"><span className={`stat-icon ${color}`}><Icon size={19}/></span></div><div className="stat-label">{label}</div><div className="stat-value-row"><strong>{number(value,locale)}</strong></div><div className="stat-sub">{sub}</div></article>)}</section>
+      <section className="overview-grid"><article className="panel activity-panel"><div className="panel-heading"><div><h2>{txt("الشهادات الصادرة", "Certificates issued")}</h2><p>{txt("الشهادات التي أُنشئت خلال آخر ستة أشهر", "Certificates created in the last six months")}</p></div><span className="select-button">{txt("آخر ٦ أشهر", "Last 6 months")}</span></div><div className="chart-legend"><span><i className="legend-dot green-dot"/> {txt("الشهادات الصادرة", "Certificates issued")}</span></div><div className="chart-wrap"><div className="chart-y"><span>{number(max,locale)}</span><span>{number(Math.round(max*.75),locale)}</span><span>{number(Math.round(max*.5),locale)}</span><span>{number(Math.round(max*.25),locale)}</span><span>{number(0,locale)}</span></div><div className="chart"><div className="grid-lines"><i/><i/><i/><i/><i/></div><svg viewBox="0 0 680 180" preserveAspectRatio="none" aria-label={txt("عدد الشهادات الصادرة", "Certificates issued count")}><defs><linearGradient id="area" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#16805b" stopOpacity=".17"/><stop offset="1" stopColor="#16805b" stopOpacity="0"/></linearGradient></defs><path d={chartArea} fill="url(#area)"/><path d={chartLine} fill="none" stroke="#16805b" strokeWidth="3" vectorEffect="non-scaling-stroke"/></svg><div className="chart-x">{months.map(({date})=><span key={date.toISOString()}>{new Intl.DateTimeFormat(locale==="ar"?"ar-SA":"en-US",{month:"short"}).format(date)}</span>)}</div></div></div></article>
+        <article className="panel status-panel"><div className="panel-heading"><div><h2>{txt("حالة الشهادات", "Certificate status")}</h2><p>{txt("توزيع الشهادات حسب الحالة", "Certificates grouped by status")}</p></div></div><div className="donut-area"><div className="donut" style={{background:`conic-gradient(#20845f 0 ${total?active/total*100:0}%,#e4ae51 ${total?active/total*100:0}% ${total?(active+expired)/total*100:0}%,#dc958d ${total?(active+expired)/total*100:0}% 100%)`}}><div className="donut-label"><strong>{number(total,locale)}</strong><small>{txt("إجمالي الشهادات", "Total certificates")}</small></div></div></div><div className="status-legend"><div><span><i className="legend-dot green-dot"/> {txt("سارية", "Active")}</span><b>{number(active,locale)} <small>{total?number(Math.round(active/total*100),locale):number(0,locale)}%</small></b></div><div><span><i className="legend-dot amber-dot"/> {txt("منتهية", "Expired")}</span><b>{number(expired,locale)} <small>{total?number(Math.round(expired/total*100),locale):number(0,locale)}%</small></b></div><div><span><i className="legend-dot rose-dot"/> {txt("ملغاة", "Revoked")}</span><b>{number(revoked,locale)} <small>{total?number(Math.round(revoked/total*100),locale):number(0,locale)}%</small></b></div></div></article></section>
+      <section className="panel recent-panel"><div className="panel-heading recent-heading"><div><h2>{txt("أحدث الشهادات", "Recent certificates")}</h2><p>{txt("آخر الشهادات التي تم إصدارها", "The latest certificates issued")}</p></div><div className="table-actions"><Link className="text-button" href="/certificates"><Search size={14}/> {txt("بحث وإدارة الشهادات", "Search and manage certificates")} <ArrowDownLeft size={15}/></Link></div></div><div className="table-scroll"><table><thead><tr><th>{txt("المستفيد", "Beneficiary")}</th><th>{txt("رقم الشهادة", "Certificate number")}</th><th>{txt("المنشأة", "Organization")}</th><th>{txt("تاريخ الإصدار", "Issue date")}</th><th>{txt("الحالة", "Status")}</th><th/></tr></thead><tbody>{recent.length?recent.map((item,index)=>{const displayStatus=getCertificateDisplayStatus(item.status,item.expiryDate,now);const label=displayStatus==="REVOKED"?txt("ملغاة","Revoked"):displayStatus==="EXPIRED"?txt("منتهية","Expired"):txt("سارية","Active");return <tr key={item.id}><td><div className="person-cell"><span className={`avatar person-avatar ${colors[index]}`}>{item.fullNameAr.slice(0,2)}</span><span><b>{locale==="ar"?item.fullNameAr:item.fullName}</b><small>{locale==="ar"?item.fullName:item.fullNameAr}</small></span></div></td><td className="mono">{item.certificateNumber}</td><td>{locale==="ar"?item.organizationNameAr:item.organizationName}</td><td>{dateOnly(item.issueDate,locale)}</td><td><span className={`status-pill ${displayStatus==="VALID"?"valid":displayStatus==="EXPIRED"?"expired":"soon"}`}><i/>{label}</span></td><td><Link className="row-menu" href={`/certificates/${item.id}/pdf`} aria-label={txt("معاينة الشهادة","Preview certificate")}>···</Link></td></tr>}):<tr><td colSpan={6} className="empty-row">{txt("لا توجد شهادات بعد. ابدأ بإصدار الشهادة الأولى.","No certificates yet. Issue the first certificate to get started.")}</td></tr>}</tbody></table></div><div className="table-footer"><span>{txt("عرض أحدث", "Showing latest")} {number(recent.length,locale)} {txt("من", "of")} {number(total,locale)} {txt("شهادة", "certificates")}</span><Link className="text-button" href="/certificates">{txt("عرض الكل", "View all")} <ArrowDownLeft size={15}/></Link></div></section>
+      <footer className="footer"><span>© {now.getFullYear()} Rifd. {txt("جميع الحقوق محفوظة.", "All rights reserved.")}</span><span><ShieldCheck size={14}/> {txt("نظام خاص لإدارة الشهادات الصحية · ليس مستنداً حكومياً", "Private health certificate system · Not a government document")}</span></footer>
+    </div></main>
+  </div>;
 }
