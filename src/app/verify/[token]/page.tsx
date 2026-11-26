@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { BadgeX, Clock3, Printer, SearchX } from "lucide-react";
+import { BadgeX, Clock3, SearchX } from "lucide-react";
 import PortalFrame from "@/components/layout/portal-frame";
 import { useLocale } from "@/components/locale-provider";
 import { t } from "@/lib/locale";
@@ -77,7 +77,6 @@ export default function VerifyPage() {
             ].map(([label, fieldValue]) => <div key={label}><small>{label}</small><b dir={[txt("رقم الشهادة الصحية", "Health certificate number"), txt("رقم المنشأة", "Organization number"), txt("رقم الترخيص", "License number")].includes(label) ? "ltr" : undefined}>{fieldValue || "—"}</b></div>)}
           </div>
         </>}
-        {result.certificate && <a className="verify-print" href={`/verify/${encodeURIComponent(token)}/print`} target="_blank" rel="noopener noreferrer"><Printer size={15} />{txt("طباعة تفاصيل التحقق", "Print verification details")}</a>}
       </>}
     </article>
   </main></PortalFrame>;

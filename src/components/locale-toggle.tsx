@@ -1,11 +1,28 @@
 "use client";
 
-import { useLocale } from "@/components/locale-provider";
+import { Languages } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useLocale } from "@/components/locale-provider";
 
-export default function LocaleToggle() {
-  const { locale: current, setLocale } = useLocale();
+export default function LocaleToggle({ className = "lang-button", onChange }: {
+  className?: string;
+  onChange?: () => void;
+}) {
+  const { locale, setLocale } = useLocale();
   const router = useRouter();
-  function toggle() { setLocale(current === "ar" ? "en" : "ar"); router.refresh(); }
-  return <button type="button" className="lang-button" onClick={toggle} aria-label={current === "ar" ? "Switch to English" : "التبديل إلى العربية"}>{current === "ar" ? "EN" : "عربي"}</button>;
+  const nextLocale = locale === "ar" ? "en" : "ar";
+
+  function toggle() {
+    setLocale(nextLocale);
+    onChange?.();
+    router.refresh();
+  }
+
+  return (
+    <button type="button" className={className} lang={nextLocale} onClick={toggle}
+      aria-label={nextLocale === "en" ? "Switch to English" : "التبديل إلى العربية"}>
+      <Languages size={16} aria-hidden="true" />
+      {nextLocale === "en" ? "English" : "العربية"}
+    </button>
+  );
 }

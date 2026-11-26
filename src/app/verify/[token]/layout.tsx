@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
+import { getLocale } from "@/lib/locale-server";
 
-export const metadata: Metadata = {
-  title: "Issue Health Certificate",
-  robots: { index: false, follow: false, noarchive: true },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return {
+    title: locale === "ar" ? "التحقق من الشهادة الصحية | رِفد" : "Health Certificate Verification | Rifd",
+    robots: { index: false, follow: false, noarchive: true },
+  };
+}
 
 export default function VerificationLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return children;

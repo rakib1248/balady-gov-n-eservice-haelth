@@ -2,17 +2,16 @@ import type { Metadata } from "next";
 import { getLocale } from "@/lib/locale-server";
 import { LocaleProvider } from "@/components/locale-provider";
 import "./globals.css";
+import "@/components/layout/portal-header.css";
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   return {
-    title: "Issue Health Certificate",
+    title: locale === "ar" ? "  نظام الشهادات الصحية" : " Health Certificate System",
     description: locale === "ar"
       ? "نظام خاص لإدارة وإصدار الشهادات الصحية والتحقق منها."
       : "Manage, issue, and verify health certificates with the Health Certificate Management System.",
     icons: {
-      icon: [{ url: "/favIcon.png", type: "image/png", sizes: "867x871" }],
-      shortcut: "/favIcon.png",
       apple: "/favIcon.png",
     },
     robots: { index: false, follow: false },
