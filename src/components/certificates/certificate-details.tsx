@@ -8,7 +8,6 @@ import { ArrowRight, Download, FilePenLine, UserRound } from "lucide-react";
 import PortalFrame from "@/components/layout/portal-frame";
 import { useLocale } from "@/components/locale-provider";
 import { getCertificateDisplayStatus } from "@/lib/certificate-status";
-import { t } from "@/lib/locale";
 
 type Certificate = {
   certificateNumber: string;
@@ -41,7 +40,7 @@ type Field = { label: string; value: string };
 export default function CertificateDetails() {
   const { id } = useParams<{ id: string }>();
   const { locale } = useLocale();
-  const txt = (ar: string, en: string) => t(locale, ar, en);
+  const txt = (_ar: string, en: string) => en;
   const [certificate, setCertificate] = useState<Certificate | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -61,32 +60,37 @@ export default function CertificateDetails() {
   }, [id]);
 
   const status = useMemo(() => certificate ? getCertificateDisplayStatus(certificate.status, new Date(certificate.expiryDate)) : null, [certificate]);
-  const date = (raw: string | null) => raw ? new Date(raw).toLocaleDateString(locale === "ar" ? "ar-SA" : "en-US", { dateStyle: "medium" }) : "—";
-  const gender = certificate ? ({ MALE: txt("ذكر", "Male"), FEMALE: txt("أنثى", "Female"), OTHER: txt("أخرى", "Other") })[certificate.gender] : "";
-  const value = (english: string, arabic: string) => locale === "ar" ? arabic || english : english || arabic;
+  const date = (raw: string | null) => raw ? new Intl.DateTimeFormat("en-US-u-nu-latn", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(raw)) : "—";
+  const englishGender = certificate ? ({ MALE: "Male", FEMALE: "Female", OTHER: "Other" })[certificate.gender] : "";
+  const englishValue = (english: string, arabic: string) => english || arabic;
+  const englishHijriDate = (raw: string | null) => raw
+    ? raw
+      .replace(/[٠-٩۰-۹]/g, digit => String("٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹".indexOf(digit) % 10))
+      .replace(/هـ/g, "AH")
+    : "—";
 
   const personalFields: Field[] = certificate ? [
-    { label: txt("الأمانة", "Municipality"), value: certificate.municipality },
-    { label: txt("البلدية / الفرع", "Municipality branch"), value: certificate.city },
-    { label: txt("الاسم", "Name"), value: value(certificate.fullName, certificate.fullNameAr) },
-    { label: txt("رقم الهوية / الإقامة", "Identity / residency number"), value: certificate.identityNumber },
-    { label: txt("الجنس", "Gender"), value: gender },
-    { label: txt("الجنسية", "Nationality"), value: value(certificate.nationality, certificate.nationalityAr) },
-    { label: txt("المهنة", "Profession"), value: value(certificate.profession, certificate.professionAr) },
+    { label: "Municipality", value: certificate.municipality },
+    { label: "Municipality branch", value: certificate.city },
+    { label: "Name", value: englishValue(certificate.fullName, certificate.fullNameAr) },
+    { label: "Identity / residency number", value: certificate.identityNumber },
+    { label: "Gender", value: englishGender },
+    { label: "Nationality", value: englishValue(certificate.nationality, certificate.nationalityAr) },
+    { label: "Profession", value: englishValue(certificate.profession, certificate.professionAr) },
   ] : [];
   const certificateFields: Field[] = certificate ? [
-    { label: txt("رقم الشهادة الصحية", "Health certificate number"), value: certificate.certificateNumber },
-    { label: txt("تاريخ الإصدار هجري", "Issue date (Hijri)"), value: certificate.hijriIssueDate || "—" },
-    { label: txt("تاريخ الإصدار ميلادي", "Issue date (Gregorian)"), value: date(certificate.issueDate) },
-    { label: txt("تاريخ الانتهاء هجري", "Expiry date (Hijri)"), value: certificate.hijriExpiryDate || "—" },
-    { label: txt("تاريخ الانتهاء ميلادي", "Expiry date (Gregorian)"), value: date(certificate.expiryDate) },
-    { label: txt("نوع البرنامج التثقيفي", "Education program"), value: certificate.programType },
-    { label: txt("انتهاء البرنامج التثقيفي", "Program expiry date"), value: date(certificate.programExpiryDate) },
+    { label: "Health certificate number", value: certificate.certificateNumber },
+    { label: "Issue date (Hijri)", value: englishHijriDate(certificate.hijriIssueDate) },
+    { label: "Issue date (Gregorian)", value: date(certificate.issueDate) },
+    { label: "Expiry date (Hijri)", value: englishHijriDate(certificate.hijriExpiryDate) },
+    { label: "Expiry date (Gregorian)", value: date(certificate.expiryDate) },
+    { label: "Education program", value: certificate.programType },
+    { label: "Program expiry date", value: date(certificate.programExpiryDate) },
   ] : [];
   const organizationFields: Field[] = certificate ? [
-    { label: txt("اسم المنشأة", "Organization name"), value: value(certificate.organizationName, certificate.organizationNameAr) },
-    { label: txt("رقم المنشأة", "Organization number"), value: certificate.organizationNumber },
-    { label: txt("رقم الرخصة", "License number"), value: certificate.licenseNumber },
+    { label: "Organization name", value: englishValue(certificate.organizationName, certificate.organizationNameAr) },
+    { label: "Organization number", value: certificate.organizationNumber },
+    { label: "License number", value: certificate.licenseNumber },
   ] : [];
 
   const renderFields = (fields: Field[]) => <div className="certificate-detail-grid">{fields.map((field) => <div className="certificate-detail-field" key={field.label}><span>{field.label}</span><b>{field.value || "—"}</b></div>)}</div>;

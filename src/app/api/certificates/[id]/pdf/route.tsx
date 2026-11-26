@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { requireRole } from "@/lib/authorization";
 import { getStorage } from "@/lib/storage";
 import { decryptVerificationToken } from "@/lib/verification-token";
-import { CertificatePdf } from "@/lib/certificate-pdf";
+import { AdminCertificatePdf } from "@/lib/admin-certificate-pdf";
 import { getCertificateDisplayStatus } from "@/lib/certificate-status";
 
 
@@ -21,8 +21,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const verificationUrl = `${base.replace(/\/$/, "")}/verify/${token}`;
   const qrDataUrl = await QRCode.toDataURL(verificationUrl, {
     errorCorrectionLevel: "H",
-    margin: 2,
-    width: 480,
+    margin: 4,
+    width: 960,
     type: "image/png",
     color: { dark: "#19352a", light: "#ffffff" },
   });
@@ -34,11 +34,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         const object = await storage.client.send(new GetObjectCommand({ Bucket: storage.bucket, Key: certificate.photoKey }));
         const bytes = await object.Body?.transformToByteArray();
         if (bytes && object.ContentType && ["image/jpeg", "image/png"].includes(object.ContentType)) photoDataUrl = `data:${object.ContentType};base64,${Buffer.from(bytes).toString("base64")}`;
-      } catch { /* Keep the certificate printable if an optional portrait is unavailable. */ }
+      } catch { /* Report a temporarily unavailable stored portrait below. */ }
     }
+    if (!photoDataUrl) return NextResponse.json({ error: "PHOTO_UNAVAILABLE" }, { status: 503, headers: { "Cache-Control": "private, no-store" } });
   }
   const status = getCertificateDisplayStatus(certificate.status, certificate.expiryDate);
-  const pdf = await renderToBuffer(<CertificatePdf data={{ ...certificate, status }} verificationUrl={verificationUrl} qrDataUrl={qrDataUrl} photoDataUrl={photoDataUrl}/>);
+  const pdf = await renderToBuffer(<AdminCertificatePdf data={{ ...certificate, status }} verificationUrl={verificationUrl} qrDataUrl={qrDataUrl} photoDataUrl={photoDataUrl}/>);
   const filename = `${certificate.certificateNumber}.pdf`;
   const disposition = request.nextUrl.searchParams.get("download") === "1" ? "attachment" : "inline";
   return new NextResponse(new Uint8Array(pdf), { headers: { "Content-Type": "application/pdf", "Content-Disposition": `${disposition}; filename*=UTF-8''${encodeURIComponent(filename)}`, "Cache-Control": "private, no-store" } });
