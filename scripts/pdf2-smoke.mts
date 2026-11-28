@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { createElement, type ReactElement } from "react";
 import type { DocumentProps } from "@react-pdf/renderer";
@@ -40,8 +40,8 @@ for (const [name, data] of Object.entries(cases)) {
     const file = `/tmp/hotel-${design}-${name}.pdf`;
     await writeFile(file, await renderToBuffer(document as unknown as ReactElement<DocumentProps>));
     const info = execFileSync("pdfinfo", [file], { encoding: "utf8" });
-    assert.match(info, design === "pdf2" ? /^Pages:\s+2$/m : /^Pages:\s+1$/m);
-    assert.match(info, design === "pdf2" ? /242\.64 x 153\.12 pts/ : /595\.28 x 841\.89 pts \(A4\)/);
+    assert.match(info, /^Pages:\s+1$/m);
+    assert.match(info, /595\.28 x 841\.89 pts \(A4\)/);
     const text = execFileSync("pdftotext", [file, "-"], { encoding: "utf8" });
     assert.doesNotMatch(text, /undefined|null|Invalid Date|MD NANTU MIAH|2437827856|480546264962/);
     if (data.certificateNumber) assert(text.includes(data.certificateNumber));
@@ -49,16 +49,26 @@ for (const [name, data] of Object.entries(cases)) {
       assert(text.includes(full.fullName!));
       assert(text.includes("1448/06/08"));
       assert(text.includes("1449/06/08"));
-      const backInfo = execFileSync("pdfinfo", ["-f", "2", "-l", "2", file], { encoding: "utf8" });
-      assert.match(backInfo, /Page\s+2 size:\s+242\.64 x 153\.12 pts/);
       const directory = await mkdtemp("/tmp/hotel-pdf2-instructions-");
       try {
-        execFileSync("pdfimages", ["-f", "2", "-l", "2", "-png", file, `${directory}/image`]);
-        const embedded = PNG.sync.read(await readFile(`${directory}/image-000.png`));
+        execFileSync("pdftohtml", ["-xml", "-zoom", "1", file, `${directory}/layout.xml`]);
+        const xml = await readFile(`${directory}/layout.xml`, "utf8");
+        const images = [...xml.matchAll(/<image top="([\d.-]+)" left="([\d.-]+)" width="([\d.-]+)" height="([\d.-]+)"[^>]*>/g)];
+        const front = images[0];
+        const back = images.at(-1);
+        assert(front && back, "Both card faces must be on the same sheet");
+        assert.equal(front[2], back[2], "Both faces must align vertically");
+        assert.equal(front[3], back[3], "Both faces must have equal print widths");
+        assert.equal(front[4], back[4], "Both faces must have equal print heights");
+        assert(Math.abs(Number(front[3]) - 242.64) < 1);
+        assert(Math.abs(Number(front[4]) - 153.12) < 1);
+        assert(Number(back[1]) > Number(front[1]) + Number(front[4]), "Instructions must sit below the front with a cutting gap");
+        execFileSync("pdfimages", ["-png", file, `${directory}/image`]);
         const supplied = PNG.sync.read(await readFile("public/certificate/pdf2-instructions.png"));
-        assert.equal(embedded.width, supplied.width);
-        assert.equal(embedded.height, supplied.height);
-        assert.deepEqual(embedded.data, supplied.data);
+        const embedded = await Promise.all((await readdir(directory))
+          .filter(name => /^image-\d+\.png$/.test(name))
+          .map(async name => PNG.sync.read(await readFile(`${directory}/${name}`))));
+        assert(embedded.some(image => image.width === supplied.width && image.height === supplied.height && image.data.equals(supplied.data)), "The complete supplied instructions must be embedded unchanged");
       } finally {
         await rm(directory, { recursive: true, force: true });
       }
@@ -67,6 +77,6 @@ for (const [name, data] of Object.entries(cases)) {
     const png = PNG.sync.read(await readFile(file.replace(/pdf$/, "png")));
     const qr = jsQR(new Uint8ClampedArray(png.data), png.width, png.height);
     assert.equal(qr?.data, verificationUrl, `${design}/${name}: QR must resolve to this certificate`);
-    console.log(`PASS ${design}/${name}: ${design === "pdf2" ? "two pages with instructions" : "one page"}, dimensions, data and QR`);
+    console.log(`PASS ${design}/${name}: one A4 page${design === "pdf2" ? " with vertically stacked card faces" : ""}, dimensions, data and QR`);
   }
 }

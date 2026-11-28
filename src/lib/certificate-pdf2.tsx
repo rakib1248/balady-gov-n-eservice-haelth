@@ -7,6 +7,9 @@ import { dateText, type WalletCertificateProps } from "./arabic-certificate-card
 // scripts/pdf2-artwork.mts extracts its static artwork with empty data fields.
 // Its sample identity, portrait and QR are never embedded in generated documents.
 const scale = 0.24;
+// Keep both cutouts at the reference's physical size; A4 is only the print sheet.
+const cardWidth = 242.64;
+const cardHeight = 153.12;
 const fontFamily = "PDF2 Arabic";
 Font.register({ family: fontFamily, src: path.join(process.cwd(), "public/fonts/NotoSansArabic.ttf") });
 const box = (left: number, top: number, width: number, height: number) => ({
@@ -26,8 +29,9 @@ function Value({ value, left, top, width = 354, height = 44, size = 5.3, name = 
 
 export function CertificatePdf2({ data, qrDataUrl, photoDataUrl }: WalletCertificateProps) {
   return <Document title={`Health Certificate PDF2 ${data.certificateNumber ?? ""}`}>
-    <Page size={[242.64, 153.12]} wrap={false} style={{ fontFamily, backgroundColor: "#f0f4f4" }}>
-      <View style={{ width: 242.64, height: 153.12 }}>
+    <Page size="A4" wrap={false} style={{ fontFamily }}>
+      <View style={{ height: 841.89, alignItems: "center", paddingTop: 36 }}>
+      <View style={{ width: cardWidth, height: cardHeight, backgroundColor: "#f0f4f4" }}>
       <Image src={path.join(process.cwd(), "public/certificate/pdf2-front.png")} style={box(0, 0, 1011, 638)}/>
       <View style={{ ...box(20, 134, 205, 205), border: "0.24 solid #85bd48", padding: 8 * scale, alignItems: "center", justifyContent: "center" }}>
         {photoDataUrl ? <Image src={photoDataUrl} style={{ width: "100%", height: "100%", objectFit: "contain" }}/> : <Text style={{ fontSize: 4, direction: "rtl", textAlign: "center" }}>لا توجد صورة مسجلة</Text>}
@@ -43,13 +47,13 @@ export function CertificatePdf2({ data, qrDataUrl, photoDataUrl }: WalletCertifi
       <Value value={dateText(data.hijriExpiryDate, data.expiryDate)} left={251} top={520}/>
       <Value value={dateText(data.hijriIssueDate, data.issueDate)} left={638} top={520}/>
       </View>
-    </Page>
-    <Page size={[242.64, 153.12]} wrap={false}>
-      <View style={{ width: 242.64, height: 153.12 }}>
+      <View style={{ height: 18 }}/>
+      <View style={{ width: cardWidth, height: cardHeight }}>
         <Image
           src={path.join(process.cwd(), "public/certificate/pdf2-instructions.png")}
-          style={{ width: 242.64, height: 153.12, objectFit: "contain" }}
+          style={{ width: cardWidth, height: cardHeight, objectFit: "fill" }}
         />
+      </View>
       </View>
     </Page>
   </Document>;
