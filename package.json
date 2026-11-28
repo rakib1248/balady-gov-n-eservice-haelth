@@ -13,6 +13,7 @@
     "db:dev": "prisma migrate dev",
     "db:provision-owner": "tsx scripts/provision-owner.mts",
     "pdf:smoke": "node --conditions=import --import tsx scripts/pdf-smoke.mts",
+    "pdf2:smoke": "node --conditions=import --import tsx scripts/pdf2-smoke.mts",
     "status:smoke": "node --conditions=import --import tsx scripts/certificate-status-smoke.mts",
     "validation:smoke": "node --conditions=import --import tsx scripts/certificate-validation-smoke.mts"
   },

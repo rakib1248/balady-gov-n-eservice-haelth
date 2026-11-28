@@ -30,7 +30,10 @@ export default async function CertificatePdfPreview({ params, searchParams }: {
           >{language === "ar" ? "العربية" : "English"}</Link>)}
         </nav>
       </div>
-      <a className="primary-button" href={`${source}&download=1`}><Download size={16}/> {t(locale,"تنزيل PDF","Download PDF")}</a>
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8 }}>
+        <a className="primary-button" href={`${source}&download=1`}><Download size={16}/> {t(locale,"تنزيل PDF","Download PDF")}</a>
+        <a className="primary-button" href={`/api/certificates/${encodeURIComponent(id)}/pdf?design=pdf2&download=1`}><Download size={16}/> {t(locale,"تنزيل PDF2","Download PDF2")}</a>
+      </div>
     </div>
     <iframe title={t(locale,"معاينة الشهادة الصحية","Health certificate preview")} src={source}/>
   </main></PortalFrame>;

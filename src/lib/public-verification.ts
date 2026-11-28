@@ -7,6 +7,11 @@ import { getCertificateVerificationStatus } from "@/lib/certificate-status";
 export type VerificationStatus = "VALID" | "EXPIRED" | "REVOKED" | "INVALID" | "RATE_LIMITED" | "SERVICE_UNAVAILABLE";
 
 export type PublicCertificate = {
+  identityNumber: string | null;
+  hijriIssueDate: string | null;
+  hijriExpiryDate: string | null;
+  programType: string | null;
+  programExpiryDate: Date | null;
   certificateNumber: string | null;
   name: string | null;
   nameAr: string | null;
@@ -41,7 +46,7 @@ export async function resolvePublicVerification(token: string, clientAddress: st
   if ((buckets[0]?.hits ?? 0) > 30) return { status: "RATE_LIMITED" };
 
   const record = await db.certificate.findUnique({ where: { verificationTokenHash: tokenHash }, select: {
-    id: true, certificateNumber: true, fullName: true, fullNameAr: true, nationality: true, nationalityAr: true, gender: true,
+    id: true, identityNumber: true, hijriIssueDate: true, hijriExpiryDate: true, programType: true, programExpiryDate: true, certificateNumber: true, fullName: true, fullNameAr: true, nationality: true, nationalityAr: true, gender: true,
     profession: true, professionAr: true, issueDate: true, expiryDate: true, status: true, photoKey: true,
     organizationName: true, organizationNameAr: true, organizationNumber: true, licenseNumber: true, municipality: true, city: true,
   } });
@@ -52,6 +57,11 @@ export async function resolvePublicVerification(token: string, clientAddress: st
   return {
     status,
     certificate: {
+      identityNumber: record.identityNumber,
+      hijriIssueDate: record.hijriIssueDate,
+      hijriExpiryDate: record.hijriExpiryDate,
+      programType: record.programType,
+      programExpiryDate: record.programExpiryDate,
       certificateNumber: record.certificateNumber,
       name: record.fullName,
       nameAr: record.fullNameAr,

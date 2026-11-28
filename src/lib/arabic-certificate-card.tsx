@@ -53,7 +53,7 @@ function box(left: number, top: number, width: number, height: number) {
 const hijri = new Intl.DateTimeFormat("en-GB-u-ca-islamic-umalqura-nu-latn", {
   year: "numeric", month: "2-digit", day: "2-digit", timeZone: "UTC",
 });
-function dateText(stored: string | null | undefined, date: Date | null) {
+export function dateText(stored: string | null | undefined, date: Date | null) {
   if (stored?.trim()) return latinDigits(stored.trim());
   if (!date) return "";
   const parts = Object.fromEntries(hijri.formatToParts(date).map(part => [part.type, part.value]));
@@ -78,7 +78,7 @@ function CardText({ value: input, left, top, width, height, size = 4.9, color = 
 const statusLabels: Record<string, string> = { VALID: "سارية", EXPIRED: "منتهية الصلاحية", REVOKED: "ملغاة" };
 const frame = { border: "0.5 solid #a9c98d", backgroundColor: "#f8f8f7", padding: 2.1, alignItems: "center", justifyContent: "center" } as const;
 
-export function ArabicCertificateFront({ data, photoDataUrl, qrDataUrl, verificationUrl, image }: WalletCertificateProps & { image: Buffer }) {
+export function ArabicCertificateFront({ data, photoDataUrl, qrDataUrl, image }: WalletCertificateProps & { image: Buffer }) {
   const issuer = data.organizationNameAr || data.organizationName;
   const issuerLine = ["شهادة شركة خاصة", issuer, statusLabels[data.status ?? ""] ?? data.status].filter(Boolean).join(" · ");
   return <View style={{ width: cardSize[0], height: cardSize[1] }}>
@@ -99,7 +99,6 @@ export function ArabicCertificateFront({ data, photoDataUrl, qrDataUrl, verifica
     <CardText value={data.certificateNumber} left={493} top={338} width={255} height={38}/>
     <CardText value={dateText(data.hijriExpiryDate, data.expiryDate)} left={199} top={441} width={252} height={38}/>
     <CardText value={dateText(data.hijriIssueDate, data.issueDate)} left={493} top={441} width={255} height={38}/>
-    <Link src={verificationUrl} style={{ ...box(15, 457, 158, 21), textAlign: "center", fontSize: 3, lineHeight: 1.4, color: "#46665d", textDecoration: "none", direction: "rtl" }}>امسح الرمز للتحقق</Link>
     <Link src="https://x.com/balady_cs" style={box(240, 493, 104, 42)}><View/></Link>
     <Link src="https://balady.gov.sa" style={box(565, 493, 182, 42)}><View/></Link>
   </View>;

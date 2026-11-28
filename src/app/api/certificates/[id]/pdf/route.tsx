@@ -9,6 +9,7 @@ import { decryptVerificationToken } from "@/lib/verification-token";
 import { getPdfLocale } from "@/lib/locale-server";
 import { readArabicCardArtwork } from "@/lib/arabic-certificate-card";
 import { AdminCertificatePdf } from "@/lib/admin-certificate-pdf";
+import { CertificatePdf2 } from "@/lib/certificate-pdf2";
 import { getCertificateDisplayStatus } from "@/lib/certificate-status";
 
 
@@ -41,12 +42,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (!photoDataUrl) return NextResponse.json({ error: "PHOTO_UNAVAILABLE" }, { status: 503, headers: { "Cache-Control": "private, no-store" } });
   }
   const status = getCertificateDisplayStatus(certificate.status, certificate.expiryDate);
+  const isPdf2 = request.nextUrl.searchParams.get("design") === "pdf2";
+  const props = { data: { ...certificate, status }, verificationUrl, qrDataUrl, photoDataUrl };
   const locale = await getPdfLocale(request.nextUrl.searchParams.get("lang"));
-  const template = locale === "en"
-    ? { locale } as const
-    : { locale, artwork: await readArabicCardArtwork() } as const;
-  const pdf = await renderToBuffer(<AdminCertificatePdf {...template} data={{ ...certificate, status }} verificationUrl={verificationUrl} qrDataUrl={qrDataUrl} photoDataUrl={photoDataUrl}/>);
-  const filename = `${certificate.certificateNumber || "certificate"}.pdf`;
+  const document = isPdf2
+    ? <CertificatePdf2 {...props}/>
+    : locale === "en"
+      ? <AdminCertificatePdf {...props} locale="en"/>
+      : <AdminCertificatePdf {...props} locale="ar" artwork={await readArabicCardArtwork()}/>;
+  const pdf = await renderToBuffer(document);
+  const filename = `${certificate.certificateNumber || "certificate"}${isPdf2 ? "-PDF2" : ""}.pdf`;
   const disposition = request.nextUrl.searchParams.get("download") === "1" ? "attachment" : "inline";
   return new NextResponse(new Uint8Array(pdf), { headers: { "Content-Type": "application/pdf", "Content-Disposition": `${disposition}; filename*=UTF-8''${encodeURIComponent(filename)}`, "Cache-Control": "private, no-store" } });
 }

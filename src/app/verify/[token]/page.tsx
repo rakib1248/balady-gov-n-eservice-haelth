@@ -6,8 +6,6 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { BadgeX, Clock3, SearchX } from "lucide-react";
 import PortalFrame from "@/components/layout/portal-frame";
-import { useLocale } from "@/components/locale-provider";
-import { t } from "@/lib/locale";
 
 type Status =
   | "VALID"
@@ -17,6 +15,11 @@ type Status =
   | "RATE_LIMITED"
   | "SERVICE_UNAVAILABLE";
 type PublicCertificate = {
+  identityNumber: string | null;
+  hijriIssueDate: string | null;
+  hijriExpiryDate: string | null;
+  programType: string | null;
+  programExpiryDate: string | null;
   certificateNumber: string;
   name: string;
   nameAr: string;
@@ -55,8 +58,6 @@ const statusColors = {
 
 export default function VerifyPage() {
   const { token } = useParams<{ token: string }>();
-  const { locale } = useLocale();
-  const txt = (ar: string, en: string) => t(locale, ar, en);
   const [result, setResult] = useState<Result | null>(null);
   useEffect(() => {
     let active = true;
@@ -79,39 +80,37 @@ export default function VerifyPage() {
   const Icon = status && status !== "VALID" ? statusIcons[status] : null;
   const statusLabel = status
     ? {
-        VALID: txt("سارية · VALID", "VALID · Certificate is active"),
-        EXPIRED: txt("منتهية · EXPIRED", "EXPIRED · Certificate has expired"),
-        REVOKED: txt("ملغاة · REVOKED", "REVOKED · Certificate was revoked"),
-        INVALID: txt("غير صالحة · INVALID", "INVALID · Certificate not found"),
-        RATE_LIMITED: txt(
-          "محاولات كثيرة. أعد المحاولة بعد دقيقة.",
-          "Too many attempts. Retry in one minute.",
-        ),
-        SERVICE_UNAVAILABLE: txt(
-          "تعذر التحقق حالياً. أعد المحاولة لاحقاً.",
-          "Verification is temporarily unavailable. Try again later.",
-        ),
+        VALID: "سارية",
+        EXPIRED: "منتهية الصلاحية",
+        REVOKED: "ملغاة",
+        INVALID: "لم يتم العثور على الشهادة",
+        RATE_LIMITED: "محاولات كثيرة. أعد المحاولة بعد دقيقة.",
+        SERVICE_UNAVAILABLE: "تعذر التحقق حالياً. أعد المحاولة لاحقاً.",
       }[status]
     : "";
-  const value = (en: string, ar: string) => en || ar;
+  const value = (en: string | null, ar: string | null) => ar || en;
   const date = (
-    raw: string,
+    raw: string | null,
     calendar: "gregory" | "islamic-umalqura" = "gregory",
-  ) =>
-    raw ? new Intl.DateTimeFormat(`en-US-u-ca-${calendar}-nu-latn`, {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      timeZone: "UTC",
-    }).format(new Date(raw)) : "—";
+    stored?: string | null,
+  ) => {
+    if (stored?.trim()) return stored.trim().replace(/[٠-٩۰-۹]/g, digit => String(digit.charCodeAt(0) & 15));
+    if (!raw) return "—";
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) return "—";
+    const parts = Object.fromEntries(new Intl.DateTimeFormat(`en-GB-u-ca-${calendar}-nu-latn`, {
+      year: "numeric", month: "2-digit", day: "2-digit", timeZone: "UTC",
+    }).formatToParts(parsed).map(part => [part.type, part.value]));
+    return `${parts.year}/${parts.month}/${parts.day}`;
+  };
   return (
     <PortalFrame>
-      <main className="verify-page" dir={locale === "ar" ? "rtl" : "ltr"}>
+      <main className="verify-page" dir="rtl" lang="ar">
         <article className="verify-card">
-          <h1 className="verify-title">Health Certificate</h1>
+          <h1 className="verify-title">الشهادة الصحية</h1>
           {!result ? (
             <div className="verify-loading">
-              {txt("جارٍ التحقق من الشهادة…", "Verifying certificate…")}
+              جارٍ التحقق من الشهادة…
             </div>
           ) : (
             <>
@@ -127,75 +126,74 @@ export default function VerifyPage() {
                     <img
                       className="verify-photo"
                       src={`/api/verify/${encodeURIComponent(token)}/photo`}
-                      alt={txt(
-                        "الصورة الشخصية لصاحب الشهادة",
-                        "Certificate holder profile photo",
-                      )}
+                      alt="الصورة الشخصية لصاحب الشهادة"
                     />
                   )}
                   <div className="verify-fields text-right">
                     {[
-                      ["Municipality", result.certificate.municipality],
-                      ["Municipality branch", result.certificate.city],
+                      ["الأمانة", result.certificate.municipality],
+                      ["البلدية", result.certificate.city],
                       [
-                        "Name",
+                        "الإسم",
                         value(
                           result.certificate.name,
                           result.certificate.nameAr,
                         ),
                       ],
-                      ["Identity number", "Hidden for privacy"],
-                      ["Gender", result.certificate.gender],
+                      ["رقم الهوية", result.certificate.identityNumber],
+                      ["الجنس", result.certificate.gender === "MALE" ? "ذكر" : result.certificate.gender === "FEMALE" ? "أنثى" : result.certificate.gender === "OTHER" ? "آخر" : "—"],
                       [
-                        "Nationality",
+                        "الجنسية",
                         value(
                           result.certificate.nationality,
                           result.certificate.nationalityAr,
                         ),
                       ],
                       [
-                        "Health certificate number",
+                        "رقم الشهادة الصحية",
                         result.certificate.certificateNumber,
                       ],
                       [
-                        "Profession",
+                        "المهنة",
                         value(
                           result.certificate.profession,
                           result.certificate.professionAr,
                         ),
                       ],
                       [
-                        "Date of issuance of the health certificate (Hijri calendar)",
-                        date(result.certificate.issueDate, "islamic-umalqura"),
+                        "تاريخ إصدار الشهادة الصحية هجري",
+                        date(result.certificate.issueDate, "islamic-umalqura", result.certificate.hijriIssueDate),
                       ],
                       [
-                        "Date of issuance of the health certificate (Gregorian calendar)",
+                        "تاريخ إصدار الشهادة الصحية ميلادي",
                         date(result.certificate.issueDate),
                       ],
                       [
-                        " Health certificate expiry date (Hijri calendar)",
-                        date(result.certificate.expiryDate, "islamic-umalqura"),
+                        "تاريخ نهاية الشهادة الصحية هجري",
+                        date(result.certificate.expiryDate, "islamic-umalqura", result.certificate.hijriExpiryDate),
                       ],
                       [
-                        "Health certificate expiry date (Gregorian calendar)",
+                        "تاريخ نهاية الشهادة الصحية ميلادي",
                         date(result.certificate.expiryDate),
                       ],
+                      ["نوع البرنامج التثقيفي", result.certificate.programType],
+                      ["تاريخ انتهاء البرنامج التثقيفي", date(result.certificate.programExpiryDate)],
+                      ["رقم الرخصة", result.certificate.licenseNumber],
                       [
-                        "Organization",
+                        "إسم المنشأة",
                         value(
                           result.certificate.organization,
                           result.certificate.organizationAr,
                         ),
                       ],
                       [
-                        "Organization number",
+                        "رقم المنشأة",
                         result.certificate.organizationNumber,
                       ],
-                      ["License number", result.certificate.licenseNumber],
                     ].map(([label, fieldValue]) => (
                       <div key={label}>
                         <small>{label}</small>
-                        <b dir="ltr">{fieldValue || "—"}</b>
+                        <b dir="auto">{fieldValue || "—"}</b>
                       </div>
                     ))}
                   </div>
