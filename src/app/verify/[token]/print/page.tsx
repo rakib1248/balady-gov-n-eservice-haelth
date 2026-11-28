@@ -1,10 +1,12 @@
+import { getLocale } from "@/lib/locale-server";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Issue Health Certificate" };
 
 export default async function PublicCertificatePrint({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  const pdfUrl = `/api/verify/${encodeURIComponent(token)}/pdf`;
+  const locale = await getLocale();
+  const pdfUrl = `/api/verify/${encodeURIComponent(token)}/pdf?lang=${locale}`;
 
   return (
     <main style={{ width: "100%", height: "100dvh", margin: 0, background: "#e9eeeb" }}>

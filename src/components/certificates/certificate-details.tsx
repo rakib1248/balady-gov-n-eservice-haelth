@@ -59,7 +59,7 @@ export default function CertificateDetails() {
     return () => { active = false; };
   }, [id]);
 
-  const status = useMemo(() => certificate ? getCertificateDisplayStatus(certificate.status, new Date(certificate.expiryDate)) : null, [certificate]);
+  const status = useMemo(() => certificate ? getCertificateDisplayStatus(certificate.status, certificate.expiryDate ? new Date(certificate.expiryDate) : null) : null, [certificate]);
   const date = (raw: string | null) => raw ? new Intl.DateTimeFormat("en-US-u-nu-latn", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(raw)) : "—";
   const englishGender = certificate ? ({ MALE: "Male", FEMALE: "Female", OTHER: "Other" })[certificate.gender] : "";
   const englishValue = (english: string, arabic: string) => english || arabic;

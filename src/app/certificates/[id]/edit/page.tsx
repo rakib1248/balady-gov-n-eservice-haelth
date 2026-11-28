@@ -18,7 +18,8 @@ export default function EditCertificatePage() {
     fetch(`/api/certificates/${encodeURIComponent(id)}`, { cache: "no-store" }).then(async (response) => {
       if (!response.ok) throw new Error(t(locale,"تعذر العثور على الشهادة أو لا تملك صلاحية عرضها.", "Certificate not found or you do not have permission to view it."));
       const value = await response.json();
-      for (const key of ["issueDate", "expiryDate", "programExpiryDate"]) value[key] = new Date(value[key]).toISOString().slice(0, 10);
+      for (const key of ["issueDate", "expiryDate", "programExpiryDate"]) value[key] = value[key] ? new Date(value[key]).toISOString().slice(0, 10) : "";
+      for (const key of Object.keys(value)) value[key] ??= "";
       setData(value);
     }).catch((cause: unknown) => setError(cause instanceof Error ? cause.message : t(locale,"حدث خطأ.", "Something went wrong.")));
   }, [id, locale]);

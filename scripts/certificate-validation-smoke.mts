@@ -13,3 +13,10 @@ assert.equal(certificateInput.safeParse({ ...sample, certificateNumber: "invalid
 assert.equal(certificateInput.safeParse({ ...sample, expiryDate: "2025-01-01" }).success, false);
 assert.equal(certificateInput.safeParse({ ...sample, issueDate: "2026-02-30" }).success, false);
 console.log("Certificate input validation smoke checks passed.");
+
+for (const blank of [undefined, null, "", "   "]) {
+  const empty = Object.fromEntries(Object.keys(sample).map(key => [key, blank]));
+  assert.equal(certificateInput.safeParse(empty).success, true);
+}
+assert.equal(certificateInput.safeParse({}).success, true);
+assert.equal(certificateInput.safeParse({ fullName: "Partial certificate" }).success, true);

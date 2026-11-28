@@ -1,0 +1,20 @@
+-- Preserve existing values and constraints.
+ALTER TABLE "Certificate" ALTER COLUMN "certificateNumber" DROP NOT NULL;
+ALTER TABLE "Certificate" ALTER COLUMN "fullName" DROP NOT NULL;
+ALTER TABLE "Certificate" ALTER COLUMN "fullNameAr" DROP NOT NULL;
+ALTER TABLE "Certificate" ALTER COLUMN "identityNumber" DROP NOT NULL;
+ALTER TABLE "Certificate" ALTER COLUMN "gender" DROP NOT NULL;
+ALTER TABLE "Certificate" ALTER COLUMN "nationality" DROP NOT NULL;
+ALTER TABLE "Certificate" ALTER COLUMN "nationalityAr" DROP NOT NULL;
+ALTER TABLE "Certificate" ALTER COLUMN "profession" DROP NOT NULL;
+ALTER TABLE "Certificate" ALTER COLUMN "professionAr" DROP NOT NULL;
+ALTER TABLE "Certificate" ALTER COLUMN "issueDate" DROP NOT NULL;
+ALTER TABLE "Certificate" ALTER COLUMN "expiryDate" DROP NOT NULL;
+ALTER TABLE "Certificate" ALTER COLUMN "organizationName" DROP NOT NULL;
+ALTER TABLE "Certificate" ALTER COLUMN "organizationNameAr" DROP NOT NULL;
+ALTER TABLE "Certificate" ALTER COLUMN "organizationNumber" DROP NOT NULL;
+ALTER TABLE "Certificate" ALTER COLUMN "licenseNumber" DROP NOT NULL;
+ALTER TABLE "Certificate" ALTER COLUMN "municipality" DROP NOT NULL;
+ALTER TABLE "Certificate" ALTER COLUMN "city" DROP NOT NULL;
+ALTER TABLE "Certificate" ALTER COLUMN "programType" DROP NOT NULL;
+ALTER TABLE "Certificate" ALTER COLUMN "programExpiryDate" DROP NOT NULL;

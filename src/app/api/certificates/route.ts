@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   const where = {
     organizationId: actor.organizationId,
     ...(query ? { OR: [{ certificateNumber: { contains: query, mode: "insensitive" as const } }, { fullName: { contains: query, mode: "insensitive" as const } }, { fullNameAr: { contains: query, mode: "insensitive" as const } }] } : {}),
-    ...(requestedStatus === "REVOKED" ? { status: "REVOKED" as const } : requestedStatus === "EXPIRED" ? { status: "VALID" as const, expiryDate: { lt: now } } : requestedStatus === "VALID" ? { status: "VALID" as const, expiryDate: { gte: now } } : {}),
+    ...(requestedStatus === "REVOKED" ? { status: "REVOKED" as const } : requestedStatus === "EXPIRED" ? { status: "VALID" as const, expiryDate: { lt: now } } : requestedStatus === "VALID" ? { status: "VALID" as const, AND: [{ OR: [{ expiryDate: null }, { expiryDate: { gte: now } }] }] } : {}),
   };
   const [total, rows] = await Promise.all([
     db.certificate.count({ where }),
@@ -43,9 +43,9 @@ export async function POST(request: NextRequest) {
       const certificate = await tx.certificate.create({ data: {
         ...input,
         photoKey: input.photoKey || null,
-        issueDate: new Date(`${input.issueDate}T00:00:00.000Z`),
-        expiryDate: new Date(`${input.expiryDate}T23:59:59.999Z`),
-        programExpiryDate: new Date(`${input.programExpiryDate}T23:59:59.999Z`),
+        issueDate: input.issueDate ? new Date(`${input.issueDate}T00:00:00.000Z`) : null,
+        expiryDate: input.expiryDate ? new Date(`${input.expiryDate}T23:59:59.999Z`) : null,
+        programExpiryDate: input.programExpiryDate ? new Date(`${input.programExpiryDate}T23:59:59.999Z`) : null,
         hijriIssueDate: input.hijriIssueDate || null,
         hijriExpiryDate: input.hijriExpiryDate || null,
         organizationId: actor.organizationId,

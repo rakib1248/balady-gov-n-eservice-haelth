@@ -7,22 +7,22 @@ import { getCertificateVerificationStatus } from "@/lib/certificate-status";
 export type VerificationStatus = "VALID" | "EXPIRED" | "REVOKED" | "INVALID" | "RATE_LIMITED" | "SERVICE_UNAVAILABLE";
 
 export type PublicCertificate = {
-  certificateNumber: string;
-  name: string;
-  nameAr: string;
-  nationality: string;
-  nationalityAr: string;
-  gender: string;
-  profession: string;
-  professionAr: string;
-  issueDate: Date;
-  expiryDate: Date;
-  organization: string;
-  organizationAr: string;
-  organizationNumber: string;
-  licenseNumber: string;
-  municipality: string;
-  city: string;
+  certificateNumber: string | null;
+  name: string | null;
+  nameAr: string | null;
+  nationality: string | null;
+  nationalityAr: string | null;
+  gender: string | null;
+  profession: string | null;
+  professionAr: string | null;
+  issueDate: Date | null;
+  expiryDate: Date | null;
+  organization: string | null;
+  organizationAr: string | null;
+  organizationNumber: string | null;
+  licenseNumber: string | null;
+  municipality: string | null;
+  city: string | null;
   photoAvailable: boolean;
 };
 

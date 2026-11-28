@@ -2,6 +2,8 @@ import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { renderToBuffer } from "@react-pdf/renderer";
 import QRCode from "qrcode";
 import { NextRequest, NextResponse } from "next/server";
+import { getPdfLocale } from "@/lib/locale-server";
+import { readArabicCardArtwork } from "@/lib/arabic-certificate-card";
 import { CertificatePdf } from "@/lib/certificate-pdf";
 import { getPublicPhoto, resolvePublicVerification } from "@/lib/public-verification";
 import { getStorage } from "@/lib/storage";
@@ -45,11 +47,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const certificate = result.certificate;
+    const locale = await getPdfLocale(request.nextUrl.searchParams.get("lang"));
+    if (locale === "ar" && certificate.photoAvailable && !photoDataUrl) {
+      return NextResponse.json({ error: "PHOTO_UNAVAILABLE" }, { status: 503, headers: { "Cache-Control": "private, no-store" } });
+    }
+    const artwork = locale === "ar" ? await readArabicCardArtwork() : undefined;
+    const disposition = request.nextUrl.searchParams.get("download") === "1" ? "attachment" : "inline";
     const pdf = await renderToBuffer(<CertificatePdf
+      artwork={artwork}
       data={{
         fullName: certificate.name,
         fullNameAr: certificate.nameAr,
-        identityNumber: "Hidden for privacy",
+        identityNumber: locale === "ar" ? null : "Hidden for privacy",
         gender: certificate.gender,
         nationality: certificate.nationality,
         nationalityAr: certificate.nationalityAr,
@@ -75,7 +84,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return new NextResponse(new Uint8Array(pdf), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename*=UTF-8''${encodeURIComponent(`${certificate.certificateNumber}.pdf`)}`,
+        "Content-Disposition": `${disposition}; filename*=UTF-8''${encodeURIComponent(`${certificate.certificateNumber || "certificate"}.pdf`)}`,
         "Cache-Control": "private, no-store",
       },
     });

@@ -98,12 +98,12 @@ export default function VerifyPage() {
     raw: string,
     calendar: "gregory" | "islamic-umalqura" = "gregory",
   ) =>
-    new Intl.DateTimeFormat(`en-US-u-ca-${calendar}-nu-latn`, {
+    raw ? new Intl.DateTimeFormat(`en-US-u-ca-${calendar}-nu-latn`, {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
       timeZone: "UTC",
-    }).format(new Date(raw));
+    }).format(new Date(raw)) : "—";
   return (
     <PortalFrame>
       <main className="verify-page" dir={locale === "ar" ? "rtl" : "ltr"}>

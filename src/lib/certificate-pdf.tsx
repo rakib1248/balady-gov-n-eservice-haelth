@@ -1,6 +1,7 @@
 /* eslint-disable jsx-a11y/alt-text -- React PDF Image primitives do not render HTML images. */
 import { Document, Font, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import path from "node:path";
+import { ArabicCertificatePage } from "./arabic-certificate-card";
 
 Font.register({ family: "Noto Arabic", src: path.join(process.cwd(), "public/fonts/NotoSansArabic.ttf") });
 const styles = StyleSheet.create({
@@ -15,21 +16,22 @@ const styles = StyleSheet.create({
 });
 
 export type CertificatePdfData = {
-  fullName: string; fullNameAr: string; identityNumber: string; gender: string; nationality: string; nationalityAr: string;
-  profession: string; professionAr: string; certificateNumber: string; issueDate: Date; expiryDate: Date; hijriIssueDate: string | null;
-  hijriExpiryDate: string | null; organizationName: string; organizationNameAr: string; organizationNumber: string;
-  licenseNumber: string; municipality: string; city: string; programType?: string; programExpiryDate?: Date; status: string;
+  fullName: string | null; fullNameAr: string | null; identityNumber: string | null; gender: string | null; nationality: string | null; nationalityAr: string | null;
+  profession: string | null; professionAr: string | null; certificateNumber: string | null; issueDate: Date | null; expiryDate: Date | null; hijriIssueDate: string | null;
+  hijriExpiryDate: string | null; organizationName: string | null; organizationNameAr: string | null; organizationNumber: string | null;
+  licenseNumber: string | null; municipality: string | null; city: string | null; programType?: string | null; programExpiryDate?: Date | null; status: string | null;
 };
-const date = (value: Date) => value.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" });
+const date = (value: Date | null) => value ? value.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }) : "";
 
-export function CertificatePdf({ data, verificationUrl, qrDataUrl, photoDataUrl }: { data: CertificatePdfData; verificationUrl: string; qrDataUrl: string; photoDataUrl?: string }) {
-  const detail = (label: string, arabic: string, english?: string) => <View style={styles.cell} key={label}><Text style={styles.label}>{label}</Text><Text style={styles.value}>{arabic}</Text>{english&&<Text style={styles.english}>{english}</Text>}</View>;
-  return <Document title={`Issue Health Certificate ${data.certificateNumber}`}><Page size="A4" style={styles.page}><View style={styles.frame}>
+export function CertificatePdf({ data, verificationUrl, qrDataUrl, photoDataUrl, artwork }: { data: CertificatePdfData; verificationUrl: string; qrDataUrl: string; photoDataUrl?: string; artwork?: { front: Buffer; instructions: Buffer } }) {
+  if (artwork) return <Document title={`Health Certificate ${data.certificateNumber ?? ""}`}><ArabicCertificatePage data={data} verificationUrl={verificationUrl} qrDataUrl={qrDataUrl} photoDataUrl={photoDataUrl} artwork={artwork}/></Document>;
+  const detail = (label: string, arabic: string | null, english?: string | null) => <View style={styles.cell} key={label}><Text style={styles.label}>{label}</Text><Text style={styles.value}>{arabic}</Text>{english&&<Text style={styles.english}>{english}</Text>}</View>;
+  return <Document title={`Issue Health Certificate ${data.certificateNumber ?? ""}`}><Page size="A4" style={styles.page}><View style={styles.frame}>
     <View style={styles.header}><View style={styles.brand}><View style={styles.brandMark}><Text style={styles.markText}>HC</Text></View><View><Text style={styles.brandName}>إصدار الشهادة الصحية</Text><Text style={styles.brandSub}>ISSUE HEALTH CERTIFICATE</Text></View></View></View>
     <Text style={styles.title}>شهادة صحية</Text><Text style={styles.subtitle}>HEALTH CERTIFICATE</Text><Text style={styles.number}>{data.certificateNumber} · {data.status}</Text>
-    <View style={styles.person}>{photoDataUrl?<Image src={photoDataUrl} style={styles.photo}/>:<View style={styles.photoFallback}><Text>صورة شخصية</Text></View>}<View style={styles.personInfo}><Text style={styles.name}>{data.fullNameAr}</Text><Text style={styles.enName}>{data.fullName}</Text><Text style={styles.identity}>رقم الهوية: {data.identityNumber} · {data.gender === "FEMALE" ? "أنثى" : data.gender === "MALE" ? "ذكر" : "أخرى"}</Text></View></View>
+    <View style={styles.person}>{photoDataUrl?<Image src={photoDataUrl} style={styles.photo}/>:<View style={styles.photoFallback}><Text>صورة شخصية</Text></View>}<View style={styles.personInfo}><Text style={styles.name}>{data.fullNameAr}</Text><Text style={styles.enName}>{data.fullName}</Text><Text style={styles.identity}>رقم الهوية: {data.identityNumber ?? ""} · {data.gender === "FEMALE" ? "أنثى" : data.gender === "MALE" ? "ذكر" : ""}</Text></View></View>
     <Text style={styles.section}>بيانات المستفيد · BENEFICIARY</Text><View style={styles.grid}>{detail("الجنسية · NATIONALITY", data.nationalityAr, data.nationality)}{detail("المهنة · PROFESSION", data.professionAr, data.profession)}{detail("تاريخ الإصدار · ISSUE DATE", date(data.issueDate), data.hijriIssueDate ?? undefined)}{detail("تاريخ الانتهاء · EXPIRY DATE", date(data.expiryDate), data.hijriExpiryDate ?? undefined)}</View>
-    <Text style={styles.section}>بيانات المنشأة · ORGANIZATION</Text><View style={styles.grid}>{detail("المنشأة · ORGANIZATION", data.organizationNameAr, data.organizationName)}{detail("رقم المنشأة · ORGANIZATION NO.", data.organizationNumber)}{detail("رقم الرخصة · LICENSE NO.", data.licenseNumber)}{detail("البلدية والمدينة · MUNICIPALITY / CITY", `${data.municipality} · ${data.city}`)}</View>
+    <Text style={styles.section}>بيانات المنشأة · ORGANIZATION</Text><View style={styles.grid}>{detail("المنشأة · ORGANIZATION", data.organizationNameAr, data.organizationName)}{detail("رقم المنشأة · ORGANIZATION NO.", data.organizationNumber)}{detail("رقم الرخصة · LICENSE NO.", data.licenseNumber)}{detail("البلدية والمدينة · MUNICIPALITY / CITY", [data.municipality, data.city].filter(Boolean).join(" · "))}</View>
     {data.programType && data.programExpiryDate && <><Text style={styles.section}>البرنامج التثقيفي · TRAINING</Text><View style={styles.grid}>{detail("نوع البرنامج · PROGRAM", data.programType)}{detail("انتهاء البرنامج · PROGRAM EXPIRY", date(data.programExpiryDate))}</View></>}
     <View style={styles.bottom} wrap={false}><View style={styles.qrBlock}><Image src={qrDataUrl} style={styles.qr}/><Text style={styles.qrLabel}>Scan to Verify</Text><Text style={styles.qrLabel}>امسح للتحقق</Text></View><View style={styles.verify}><Text style={styles.verifyHead}>التحقق من الشهادة · VERIFY</Text><Text style={styles.verifyText}>امسح رمز QR للتحقق من حالة الشهادة عبر بوابة رِفد. تعرض صفحة التحقق معلومات عامة محدودة.</Text><Text style={styles.verifyUrl}>{verificationUrl}</Text></View></View>
   </View></Page></Document>;

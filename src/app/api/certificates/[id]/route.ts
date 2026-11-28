@@ -33,8 +33,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       const updated = await tx.certificate.update({ where: { id }, data: {
         ...input,
         photoKey: input.photoKey || null,
-        issueDate: new Date(`${input.issueDate}T00:00:00.000Z`), expiryDate: new Date(`${input.expiryDate}T23:59:59.999Z`),
-        programExpiryDate: new Date(`${input.programExpiryDate}T23:59:59.999Z`),
+        issueDate: input.issueDate ? new Date(`${input.issueDate}T00:00:00.000Z`) : null, expiryDate: input.expiryDate ? new Date(`${input.expiryDate}T23:59:59.999Z`) : null,
+        programExpiryDate: input.programExpiryDate ? new Date(`${input.programExpiryDate}T23:59:59.999Z`) : null,
         hijriIssueDate: input.hijriIssueDate || null, hijriExpiryDate: input.hijriExpiryDate || null,
       } });
       const snapshot = certificateSnapshot(updated);

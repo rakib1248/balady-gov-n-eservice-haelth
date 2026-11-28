@@ -1,16 +1,20 @@
-import { writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
-import path from "node:path";
+import { createRequire } from "node:module";
 import { createElement } from "react";
-import { Font, renderToBuffer, type DocumentProps } from "@react-pdf/renderer";
+import type { DocumentProps } from "@react-pdf/renderer";
 import type { ReactElement } from "react";
 import QRCode from "qrcode";
 import jsQR from "jsqr";
 import { PNG } from "pngjs";
+import { readArabicCardArtwork } from "../src/lib/arabic-certificate-card";
 import { CertificatePdf } from "../src/lib/certificate-pdf";
 import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
 import { createVerificationToken, decryptVerificationToken } from "../src/lib/verification-token";
+
+// Use the same renderer instance as the TSX certificate modules and their font registry.
+const { renderToBuffer } = createRequire(import.meta.url)("@react-pdf/renderer") as typeof import("@react-pdf/renderer");
 
 async function main() {
 process.env.TOKEN_ENCRYPTION_KEY = Buffer.alloc(32, 0x5a).toString("base64");
@@ -18,10 +22,9 @@ const generatedToken = createVerificationToken();
 assert.equal(generatedToken.hash, createHash("sha256").update(generatedToken.token).digest("hex"));
 assert.equal(decryptVerificationToken(generatedToken.ciphertext), generatedToken.token);
 assert.equal(generatedToken.ciphertext.includes(generatedToken.token), false);
-Font.register({ family: "Noto Arabic", src: path.join(process.cwd(), "public/fonts/NotoSansArabic.ttf") });
 const url = "https://example.invalid/verify/smoke-token";
 const qrDataUrl = await QRCode.toDataURL(url);
-const pdf = await renderToBuffer(createElement(CertificatePdf, {
+const certificate = {
   data: {
     fullName: "Sample Person", fullNameAr: "اسم تجريبي", identityNumber: "TEST-0000", gender: "OTHER",
     nationality: "Test", nationalityAr: "تجريبية", profession: "Food Handler", professionAr: "عامل أغذية",
@@ -32,7 +35,8 @@ const pdf = await renderToBuffer(createElement(CertificatePdf, {
   },
   verificationUrl: url,
   qrDataUrl,
-}) as unknown as ReactElement<DocumentProps>);
+};
+const pdf = await renderToBuffer(createElement(CertificatePdf, certificate) as unknown as ReactElement<DocumentProps>);
 const pdfPath = "/tmp/rifd-private-certificate-smoke.pdf";
 await writeFile(pdfPath, pdf);
 const pdfInfo = execFileSync("pdfinfo", [pdfPath], { encoding: "utf8" });
@@ -42,9 +46,30 @@ if (!/^Pages:\s+1\s*$/m.test(pdfInfo) || !/^Page size:\s+595\.28 x 841\.89 pts \
 const text = execFileSync("pdftotext", [pdfPath, "-"], { encoding: "utf8" });
 if (!text.includes("Scan to Verify")) throw new Error("The PDF is missing the QR scan instruction.");
 execFileSync("pdftoppm", ["-f", "1", "-singlefile", "-png", "-r", "120", pdfPath, "/tmp/rifd-private-certificate-smoke"]);
-const png = PNG.sync.read(await (await import("node:fs/promises")).readFile("/tmp/rifd-private-certificate-smoke.png"));
+const png = PNG.sync.read(await readFile("/tmp/rifd-private-certificate-smoke.png"));
 const decoded = jsQR(new Uint8ClampedArray(png.data), png.width, png.height);
 if (decoded?.data !== url) throw new Error("The PDF QR code did not decode to the expected verification URL.");
-console.log("Created one-page A4 PDF and decoded its printed QR URL.");
+const artwork = await readArabicCardArtwork();
+const instructions = artwork.instructions;
+const arabic = await renderToBuffer(createElement(CertificatePdf, { ...certificate, artwork }) as unknown as ReactElement<DocumentProps>);
+const arabicPath = "/tmp/rifd-arabic-certificate-smoke.pdf";
+await writeFile(arabicPath, arabic);
+const pages = execFileSync("pdfinfo", ["-f", "1", "-l", "1", arabicPath], { encoding: "utf8" });
+assert.match(pages, /^Pages:\s+1$/m);
+for (const page of [1]) assert(pages.includes(`Page    ${page} size:  595.28 x 841.89 pts (A4)`));
+// Inspect the instructions image embedded on the same A4 page.
+const extractDir = await mkdtemp("/tmp/rifd-arabic-instructions-");
+try {
+  const backPrefix = `${extractDir}/back`;
+  execFileSync("pdfimages", ["-f", "1", "-l", "1", "-png", arabicPath, backPrefix]);
+  const embedded = PNG.sync.read(await readFile(`${backPrefix}-003.png`));
+  const expected = PNG.sync.read(instructions);
+  assert.equal(embedded.width, expected.width);
+  assert.equal(embedded.height, expected.height);
+  assert.deepEqual(embedded.data, expected.data);
+} finally {
+  await rm(extractDir, { recursive: true, force: true });
+}
+console.log("Verified the one-page PDF and QR, and single Arabic A4 page including the instructions artwork.");
 }
 main().catch((error: unknown) => { console.error(error); process.exitCode = 1; });

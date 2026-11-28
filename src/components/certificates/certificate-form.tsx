@@ -11,17 +11,17 @@ import { useLocale } from "@/components/locale-provider";
 import { t } from "@/lib/locale";
 
 const fields = [
-  { key: "municipality", label: "الأمانة", required: true }, { key: "city", label: "البلدية", required: true },
-  { key: "fullName", label: "الاسم", required: true, ltr: true }, { key: "identityNumber", label: "رقم الهوية / الإقامة", required: true, ltr: true },
-  { key: "gender", label: "الجنس", type: "select", required: true }, { key: "nationalityAr", label: "الجنسية", required: true },
-  { key: "certificateNumber", label: "رقم الشهادة الصحية", required: true, ltr: true }, { key: "professionAr", label: "المهنة", required: true },
-  { key: "hijriIssueDate", label: "تاريخ إصدار الشهادة الصحية هجري" }, { key: "issueDate", label: "تاريخ إصدار الشهادة الصحية ميلادي", type: "date", required: true },
-  { key: "hijriExpiryDate", label: "تاريخ نهاية الشهادة الصحية هجري" }, { key: "expiryDate", label: "تاريخ نهاية الشهادة الصحية ميلادي", type: "date", required: true },
-  { key: "programType", label: "نوع البرنامج التثقيفي", required: true }, { key: "programExpiryDate", label: "تاريخ انتهاء البرنامج التثقيفي", type: "date", required: true },
-  { key: "organizationNumber", label: "رقم المنشأة", required: true, ltr: true }, { key: "licenseNumber", label: "رقم الرخصة", required: true, ltr: true },
-  { key: "fullNameAr", label: "الاسم الكامل بالعربية", required: true }, { key: "nationality", label: "الجنسية بالإنجليزية", required: true, ltr: true },
-  { key: "profession", label: "المهنة بالإنجليزية", required: true, ltr: true }, { key: "organizationNameAr", label: "اسم المنشأة بالعربية", required: true },
-  { key: "organizationName", label: "اسم المنشأة بالإنجليزية", required: true, ltr: true },
+  { key: "municipality", label: "الأمانة" }, { key: "city", label: "البلدية" },
+  { key: "fullName", label: "الاسم", ltr: true }, { key: "identityNumber", label: "رقم الهوية / الإقامة", ltr: true },
+  { key: "gender", label: "الجنس", type: "select" }, { key: "nationalityAr", label: "الجنسية" },
+  { key: "certificateNumber", label: "رقم الشهادة الصحية", ltr: true }, { key: "professionAr", label: "المهنة" },
+  { key: "hijriIssueDate", label: "تاريخ إصدار الشهادة الصحية هجري" }, { key: "issueDate", label: "تاريخ إصدار الشهادة الصحية ميلادي", type: "date" },
+  { key: "hijriExpiryDate", label: "تاريخ نهاية الشهادة الصحية هجري" }, { key: "expiryDate", label: "تاريخ نهاية الشهادة الصحية ميلادي", type: "date" },
+  { key: "programType", label: "نوع البرنامج التثقيفي" }, { key: "programExpiryDate", label: "تاريخ انتهاء البرنامج التثقيفي", type: "date" },
+  { key: "organizationNumber", label: "رقم المنشأة", ltr: true }, { key: "licenseNumber", label: "رقم الرخصة", ltr: true },
+  { key: "fullNameAr", label: "الاسم الكامل بالعربية" }, { key: "nationality", label: "الجنسية بالإنجليزية", ltr: true },
+  { key: "profession", label: "المهنة بالإنجليزية", ltr: true }, { key: "organizationNameAr", label: "اسم المنشأة بالعربية" },
+  { key: "organizationName", label: "اسم المنشأة بالإنجليزية", ltr: true },
 ] as const;
 const labelsEn: Record<string, string> = {
   fullNameAr: "Full name (Arabic)", fullName: "Full name", identityNumber: "Identity / residency number", gender: "Gender",
@@ -89,5 +89,5 @@ export default function CertificateForm({ initial, certificateId }: { initial?: 
 function Field({ field, value }: { field: (typeof fields)[number]; value?: string }) {
   const { locale } = useLocale();
   const ltr = "ltr" in field && field.ltr;
-  return <label className="form-field"><span>{locale==="ar"?field.label:labelsEn[field.key]}{"required" in field && field.required&&<i> *</i>}</span>{"type" in field&&field.type==="select"?<select name={field.key} required defaultValue={value??""}><option value="" disabled>{t(locale,"اختر الجنس","Select gender")}</option><option value="FEMALE">{t(locale,"أنثى","Female")}</option><option value="MALE">{t(locale,"ذكر","Male")}</option><option value="OTHER">{t(locale,"أخرى","Other")}</option></select>:<Input name={field.key} type={"type" in field&&field.type==="date"?"date":"text"} required={"required" in field&&field.required} defaultValue={value} dir={ltr?"ltr":"auto"} placeholder={field.key==="certificateNumber"?"HC-2026-00001":undefined}/>}</label>;
+  return <label className="form-field"><span>{locale==="ar"?field.label:labelsEn[field.key]}</span>{"type" in field&&field.type==="select"?<select name={field.key} defaultValue={value??""}><option value="">{t(locale,"اختر الجنس","Select gender")}</option><option value="FEMALE">{t(locale,"أنثى","Female")}</option><option value="MALE">{t(locale,"ذكر","Male")}</option><option value="OTHER">{t(locale,"أخرى","Other")}</option></select>:<Input name={field.key} type={"type" in field&&field.type==="date"?"date":"text"} defaultValue={value} dir={ltr?"ltr":"auto"} placeholder={field.key==="certificateNumber"?"HC-2026-00001":undefined}/>}</label>;
 }

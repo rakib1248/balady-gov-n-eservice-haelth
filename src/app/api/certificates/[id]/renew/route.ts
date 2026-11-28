@@ -15,7 +15,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const expiry = new Date(`${parsed.data.expiryDate}T23:59:59.999Z`);
   const result = await db.$transaction(async (tx) => {
     const current = await tx.certificate.findFirst({ where: { id, organizationId: actor.organizationId } });
-    if (!current || current.status === "REVOKED" || expiry <= current.expiryDate) return false;
+    if (!current || current.status === "REVOKED" || (current.expiryDate && expiry <= current.expiryDate)) return false;
     const renewed = await tx.certificate.update({ where: { id }, data: { expiryDate: expiry } });
     const snapshot = certificateSnapshot(renewed);
     const version = await tx.certificateVersion.count({ where: { certificateId: id } });

@@ -55,31 +55,31 @@ model Certificate {
   id                    String @id @default(uuid()) @db.Uuid
   organizationId        String @db.Uuid
   organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  certificateNumber     String
+  certificateNumber     String?
   verificationTokenHash String @unique
   verificationTokenCiphertext String
   status                CertificateStatus @default(VALID)
-  fullName              String
-  fullNameAr            String
-  identityNumber        String
-  gender                String
-  nationality           String
-  nationalityAr         String
-  profession            String
-  professionAr          String
+  fullName              String?
+  fullNameAr            String?
+  identityNumber        String?
+  gender                String?
+  nationality           String?
+  nationalityAr         String?
+  profession            String?
+  professionAr          String?
   photoKey              String?
-  issueDate             DateTime
-  expiryDate            DateTime
+  issueDate             DateTime?
+  expiryDate            DateTime?
   hijriIssueDate        String?
   hijriExpiryDate       String?
-  organizationName      String
-  organizationNameAr    String
-  organizationNumber    String
-  licenseNumber         String
-  municipality          String
-  city                  String
-  programType           String
-  programExpiryDate     DateTime
+  organizationName      String?
+  organizationNameAr    String?
+  organizationNumber    String?
+  licenseNumber         String?
+  municipality          String?
+  city                  String?
+  programType           String?
+  programExpiryDate     DateTime?
   revokedAt             DateTime?
   revokeReason          String?
   createdById           String @db.Uuid
