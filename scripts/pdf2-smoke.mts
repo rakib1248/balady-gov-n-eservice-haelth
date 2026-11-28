@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { createElement, type ReactElement } from "react";
 import type { DocumentProps } from "@react-pdf/renderer";
@@ -40,7 +40,7 @@ for (const [name, data] of Object.entries(cases)) {
     const file = `/tmp/hotel-${design}-${name}.pdf`;
     await writeFile(file, await renderToBuffer(document as unknown as ReactElement<DocumentProps>));
     const info = execFileSync("pdfinfo", [file], { encoding: "utf8" });
-    assert.match(info, /^Pages:\s+1$/m);
+    assert.match(info, design === "pdf2" ? /^Pages:\s+2$/m : /^Pages:\s+1$/m);
     assert.match(info, design === "pdf2" ? /242\.64 x 153\.12 pts/ : /595\.28 x 841\.89 pts \(A4\)/);
     const text = execFileSync("pdftotext", [file, "-"], { encoding: "utf8" });
     assert.doesNotMatch(text, /undefined|null|Invalid Date|MD NANTU MIAH|2437827856|480546264962/);
@@ -49,11 +49,24 @@ for (const [name, data] of Object.entries(cases)) {
       assert(text.includes(full.fullName!));
       assert(text.includes("1448/06/08"));
       assert(text.includes("1449/06/08"));
+      const backInfo = execFileSync("pdfinfo", ["-f", "2", "-l", "2", file], { encoding: "utf8" });
+      assert.match(backInfo, /Page\s+2 size:\s+242\.64 x 153\.12 pts/);
+      const directory = await mkdtemp("/tmp/hotel-pdf2-instructions-");
+      try {
+        execFileSync("pdfimages", ["-f", "2", "-l", "2", "-png", file, `${directory}/image`]);
+        const embedded = PNG.sync.read(await readFile(`${directory}/image-000.png`));
+        const supplied = PNG.sync.read(await readFile("public/certificate/pdf2-instructions.png"));
+        assert.equal(embedded.width, supplied.width);
+        assert.equal(embedded.height, supplied.height);
+        assert.deepEqual(embedded.data, supplied.data);
+      } finally {
+        await rm(directory, { recursive: true, force: true });
+      }
     }
     execFileSync("pdftoppm", ["-singlefile", "-r", design === "pdf2" ? "400" : "120", "-png", file, file.slice(0, -4)]);
     const png = PNG.sync.read(await readFile(file.replace(/pdf$/, "png")));
     const qr = jsQR(new Uint8ClampedArray(png.data), png.width, png.height);
     assert.equal(qr?.data, verificationUrl, `${design}/${name}: QR must resolve to this certificate`);
-    console.log(`PASS ${design}/${name}: one page, dimensions, data and QR`);
+    console.log(`PASS ${design}/${name}: ${design === "pdf2" ? "two pages with instructions" : "one page"}, dimensions, data and QR`);
   }
 }

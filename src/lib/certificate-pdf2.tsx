@@ -44,5 +44,13 @@ export function CertificatePdf2({ data, qrDataUrl, photoDataUrl }: WalletCertifi
       <Value value={dateText(data.hijriIssueDate, data.issueDate)} left={638} top={520}/>
       </View>
     </Page>
+    <Page size={[242.64, 153.12]} wrap={false}>
+      <View style={{ width: 242.64, height: 153.12 }}>
+        <Image
+          src={path.join(process.cwd(), "public/certificate/pdf2-instructions.png")}
+          style={{ width: 242.64, height: 153.12, objectFit: "contain" }}
+        />
+      </View>
+    </Page>
   </Document>;
 }
